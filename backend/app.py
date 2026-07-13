@@ -1,34 +1,58 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from datetime import datetime
+import bcrypt
 
 app = Flask(__name__)
 CORS(app)
 
-# ========== 模拟数据（系统自带两条示例，让你马上能看到效果）==========
-items = [
-    {
-        "id": 1,
-        "title": "蓝色水杯",
-        "category": "lost",
-        "description": "在图书馆3楼自习室丢失，蓝色带杯套",
-        "contact": "138xxxx1234",
-        "status": "pending",
-        "created_at": "2026-07-12 10:00:00"
-    },
-    {
-        "id": 2,
-        "title": "黑色书包",
-        "category": "found",
-        "description": "在食堂二楼捡到一个黑色双肩包，内有书本",
-        "contact": "139xxxx5678",
-        "status": "pending",
-        "created_at": "2026-07-12 14:30:00"
-    }
-]
-next_id = 3
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lost_find.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JWT_SECRET_KEY'] = 'super-secret-key-change-in-production'
 
-# ========== 连通性测试接口（保留）==========
+db = SQLAlchemy(app)
+jwt = JWTManager(app)
+
+# ========== 数据库模型 ==========
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    def set_password(self, password):
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+    def check_password(self, password):
+        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+
+class Item(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(10), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    contact = db.Column(db.String(100), nullable=False)
+    status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    related_item_id = db.Column(db.Integer)
+    read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+# 创建数据库表
+with app.app_context():
+    db.create_all()
+
+# ========== 连通性测试接口 ==========
 @app.route("/api/test", methods=["GET"])
 def test_api():
     return {
@@ -37,57 +61,234 @@ def test_api():
         "data": "失物招领系统基础接口连通成功"
     }
 
-# ========== 核心业务接口 ==========
+# ========== 用户认证接口 ==========
+# 1. 用户注册
+@app.route("/api/register", methods=["POST"])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not username or not email or not password:
+        return jsonify({"code": 400, "msg": "用户名、邮箱、密码不能为空"}), 400
+
+    if User.query.filter_by(username=username).first():
+        return jsonify({"code": 400, "msg": "用户名已存在"}), 400
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({"code": 400, "msg": "邮箱已被注册"}), 400
+
+    user = User(username=username, email=email)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify({"code": 200, "msg": "注册成功", "data": {"username": username}}), 201
+
+# 2. 用户登录
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"code": 400, "msg": "用户名和密码不能为空"}), 400
+
+    user = User.query.filter_by(username=username).first()
+
+    if not user or not user.check_password(password):
+        return jsonify({"code": 401, "msg": "用户名或密码错误"}), 401
+
+    access_token = create_access_token(identity={"id": user.id, "username": user.username})
+    return jsonify({
+        "code": 200,
+        "msg": "登录成功",
+        "data": {
+            "token": access_token,
+            "username": user.username,
+            "user_id": user.id
+        }
+    })
+
+# 3. 获取当前用户信息
+@app.route("/api/user", methods=["GET"])
+@jwt_required()
+def get_user():
+    current_user = get_jwt_identity()
+    user = User.query.get(current_user['id'])
+    if not user:
+        return jsonify({"code": 404, "msg": "用户不存在"}), 404
+    return jsonify({
+        "code": 200,
+        "data": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "created_at": user.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    })
+
+# ========== 物品接口 ==========
 # 1. 获取所有物品列表
 @app.route("/api/items", methods=["GET"])
 def get_items():
-    return jsonify(items)
+    items = Item.query.order_by(Item.created_at.desc()).all()
+    result = [{
+        "id": item.id,
+        "user_id": item.user_id,
+        "title": item.title,
+        "category": item.category,
+        "description": item.description,
+        "contact": item.contact,
+        "status": item.status,
+        "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    } for item in items]
+    return jsonify(result)
 
-# 2. 发布新物品
+# 2. 发布新物品（需登录）
 @app.route("/api/items", methods=["POST"])
+@jwt_required()
 def create_item():
-    global next_id
+    current_user = get_jwt_identity()
     data = request.get_json()
-    new_item = {
-        "id": next_id,
-        "title": data.get("title"),
-        "category": data.get("category"),
-        "description": data.get("description"),
-        "contact": data.get("contact"),
-        "status": "pending",
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    items.append(new_item)
-    next_id += 1
-    return jsonify(new_item), 201
+    
+    new_item = Item(
+        user_id=current_user['id'],
+        title=data.get('title'),
+        category=data.get('category'),
+        description=data.get('description'),
+        contact=data.get('contact'),
+        status='pending'
+    )
+    db.session.add(new_item)
+    db.session.commit()
+
+    return jsonify({
+        "id": new_item.id,
+        "user_id": new_item.user_id,
+        "title": new_item.title,
+        "category": new_item.category,
+        "description": new_item.description,
+        "contact": new_item.contact,
+        "status": new_item.status,
+        "created_at": new_item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    }), 201
 
 # 3. 获取单个物品详情
 @app.route("/api/items/<int:item_id>", methods=["GET"])
 def get_item(item_id):
-    for item in items:
-        if item["id"] == item_id:
-            return jsonify(item)
-    return jsonify({"error": "物品未找到"}), 404
+    item = Item.query.get(item_id)
+    if not item:
+        return jsonify({"error": "物品未找到"}), 404
+    return jsonify({
+        "id": item.id,
+        "user_id": item.user_id,
+        "title": item.title,
+        "category": item.category,
+        "description": item.description,
+        "contact": item.contact,
+        "status": item.status,
+        "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    })
 
-# 4. 更新物品状态（认领/解决）
+# 4. 更新物品状态（认领/解决）（需登录）
 @app.route("/api/items/<int:item_id>", methods=["PUT"])
+@jwt_required()
 def update_item(item_id):
+    current_user = get_jwt_identity()
+    item = Item.query.get(item_id)
+    
+    if not item:
+        return jsonify({"error": "物品未找到"}), 404
+    
+    if item.user_id != current_user['id']:
+        return jsonify({"error": "无权限修改此物品"}), 403
+    
     data = request.get_json()
-    for item in items:
-        if item["id"] == item_id:
-            item["status"] = data.get("status", item["status"])
-            return jsonify(item)
-    return jsonify({"error": "物品未找到"}), 404
+    item.status = data.get("status", item.status)
+    db.session.commit()
+    
+    return jsonify({
+        "id": item.id,
+        "status": item.status
+    })
 
-# 5. 删除物品
+# 5. 删除物品（需登录）
 @app.route("/api/items/<int:item_id>", methods=["DELETE"])
+@jwt_required()
 def delete_item(item_id):
-    global items
-    for i, item in enumerate(items):
-        if item["id"] == item_id:
-            deleted = items.pop(i)
-            return jsonify(deleted)
-    return jsonify({"error": "物品未找到"}), 404
+    current_user = get_jwt_identity()
+    item = Item.query.get(item_id)
+    
+    if not item:
+        return jsonify({"error": "物品未找到"}), 404
+    
+    if item.user_id != current_user['id']:
+        return jsonify({"error": "无权限删除此物品"}), 403
+    
+    db.session.delete(item)
+    db.session.commit()
+    
+    return jsonify({"msg": "删除成功"})
+
+# ========== 通知接口 ==========
+@app.route("/api/notifications", methods=["GET"])
+@jwt_required()
+def get_notifications():
+    current_user = get_jwt_identity()
+    notifications = Notification.query.filter_by(user_id=current_user['id']).order_by(Notification.created_at.desc()).all()
+    
+    result = [{
+        "id": n.id,
+        "title": n.title,
+        "content": n.content,
+        "related_item_id": n.related_item_id,
+        "read": n.read,
+        "created_at": n.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    } for n in notifications]
+    
+    unread_count = Notification.query.filter_by(user_id=current_user['id'], read=False).count()
+    
+    return jsonify({"notifications": result, "unread_count": unread_count})
+
+# ========== AI匹配接口 ==========
+@app.route("/api/match", methods=["POST"])
+def ai_match():
+    data = request.get_json()
+    description = data.get('description', '')
+    category = data.get('category', 'lost')
+    
+    if not description:
+        return jsonify({"code": 400, "msg": "请输入描述内容"}), 400
+    
+    target_category = 'found' if category == 'lost' else 'lost'
+    items = Item.query.filter_by(category=target_category, status='pending').all()
+    
+    matches = []
+    for item in items:
+        similarity = calculate_similarity(description, item.description)
+        if similarity > 0.3:
+            matches.append({
+                "item_id": item.id,
+                "title": item.title,
+                "description": item.description,
+                "similarity": round(similarity * 100, 2)
+            })
+    
+    matches.sort(key=lambda x: x['similarity'], reverse=True)
+    
+    return jsonify({"code": 200, "matches": matches[:5]})
+
+def calculate_similarity(text1, text2):
+    words1 = set(text1.lower())
+    words2 = set(text2.lower())
+    if not words1 or not words2:
+        return 0
+    intersection = words1 & words2
+    union = words1 | words2
+    return len(intersection) / len(union)
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)
