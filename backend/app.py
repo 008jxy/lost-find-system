@@ -144,6 +144,25 @@ def get_user():
         }
     })
 
+@app.route("/api/user/stats", methods=["GET"])
+@jwt_required()
+def get_user_stats():
+    user_id_str = get_jwt_identity()
+    user_id = int(user_id_str)
+    
+    total_count = Item.query.filter_by(user_id=user_id).count()
+    claimed_count = Item.query.filter_by(user_id=user_id, status='claimed').count()
+    pending_count = Item.query.filter_by(user_id=user_id, status='pending').count()
+    
+    return jsonify({
+        "code": 200,
+        "data": {
+            "total": total_count,
+            "claimed": claimed_count,
+            "pending": pending_count
+        }
+    })
+
 @app.route("/api/upload/avatar", methods=["POST"])
 @jwt_required()
 def upload_avatar():

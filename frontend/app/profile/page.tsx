@@ -11,10 +11,17 @@ interface UserInfo {
   created_at: string;
 }
 
+interface UserStats {
+  total: number;
+  claimed: number;
+  pending: number;
+}
+
 export default function Profile() {
   const [username, setUsername] = useState('');
   const [avatar, setAvatar] = useState('');
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,6 +34,7 @@ export default function Profile() {
       setAvatar(storedAvatar || '');
     }
     fetchUserInfo();
+    fetchUserStats();
   }, []);
 
   const fetchUserInfo = async () => {
@@ -45,6 +53,23 @@ export default function Profile() {
       }
     } catch (error) {
       console.error('获取用户信息失败:', error);
+    }
+  };
+
+  const fetchUserStats = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/user/stats', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.code === 200) {
+        setUserStats(data.data);
+      }
+    } catch (error) {
+      console.error('获取用户统计失败:', error);
     }
   };
 
@@ -184,15 +209,15 @@ export default function Profile() {
 
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-md p-6 text-center">
-          <div className="text-3xl font-bold text-blue-600">0</div>
+          <div className="text-3xl font-bold text-blue-600">{userStats?.total ?? 0}</div>
           <div className="text-gray-500">我的帖子</div>
         </div>
         <div className="bg-white rounded-xl shadow-md p-6 text-center">
-          <div className="text-3xl font-bold text-green-600">0</div>
+          <div className="text-3xl font-bold text-green-600">{userStats?.claimed ?? 0}</div>
           <div className="text-gray-500">已认领</div>
         </div>
         <div className="bg-white rounded-xl shadow-md p-6 text-center">
-          <div className="text-3xl font-bold text-yellow-600">0</div>
+          <div className="text-3xl font-bold text-yellow-600">{userStats?.pending ?? 0}</div>
           <div className="text-gray-500">待处理</div>
         </div>
       </div>
