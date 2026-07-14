@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+interface User {
+  id: number;
+  username: string;
+  avatar: string;
+}
+
 interface Item {
   id: number;
   user_id: number;
@@ -16,6 +22,7 @@ interface Item {
   image: string;
   status: 'pending' | 'claimed' | 'resolved';
   created_at: string;
+  user?: User;
 }
 
 export default function ItemDetail() {
@@ -204,7 +211,17 @@ export default function ItemDetail() {
                    item.status === 'claimed' ? '已认领' : '已解决'}
                 </span>
               </div>
-              <p className="text-sm text-gray-400">{new Date(item.created_at).toLocaleString()}</p>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={item.user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+                    alt={item.user?.username || '用户'}
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                  <span className="text-sm text-gray-500">{item.user?.username || '匿名用户'}</span>
+                </div>
+                <p className="text-sm text-gray-400">{new Date(item.created_at).toLocaleString()}</p>
+              </div>
             </div>
             {isOwner && (
               <div className="flex gap-2">

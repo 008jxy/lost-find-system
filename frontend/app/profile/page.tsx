@@ -15,6 +15,8 @@ interface UserInfo {
 interface UserStats {
   total: number;
   claimed: number;
+  resolved: number;
+  completed: number;
   pending: number;
 }
 
@@ -331,18 +333,18 @@ export default function Profile() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl shadow-md p-6 text-center">
+        <Link href="/profile/posts" className="block bg-white rounded-xl shadow-md p-6 text-center hover:shadow-lg transition-shadow">
           <div className="text-3xl font-bold text-purple-600">{userStats?.total ?? 0}</div>
           <div className="text-gray-500">我的帖子</div>
-        </div>
-        <div className="bg-white rounded-xl shadow-md p-6 text-center">
-          <div className="text-3xl font-bold text-green-600">{userStats?.claimed ?? 0}</div>
-          <div className="text-gray-500">已认领</div>
-        </div>
-        <div className="bg-white rounded-xl shadow-md p-6 text-center">
+        </Link>
+        <Link href="/profile/posts?status=completed" className="block bg-white rounded-xl shadow-md p-6 text-center hover:shadow-lg transition-shadow">
+          <div className="text-3xl font-bold text-green-600">{userStats?.completed ?? 0}</div>
+          <div className="text-gray-500">已完成</div>
+        </Link>
+        <Link href="/profile/posts?status=pending" className="block bg-white rounded-xl shadow-md p-6 text-center hover:shadow-lg transition-shadow">
           <div className="text-3xl font-bold text-yellow-600">{userStats?.pending ?? 0}</div>
           <div className="text-gray-500">待处理</div>
-        </div>
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6">

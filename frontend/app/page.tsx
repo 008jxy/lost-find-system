@@ -3,6 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+interface User {
+  id: number;
+  username: string;
+  avatar: string;
+}
+
 interface Item {
   id: number;
   user_id: number;
@@ -13,6 +19,7 @@ interface Item {
   image: string;
   status: 'pending' | 'claimed' | 'resolved';
   created_at: string;
+  user?: User;
 }
 
 export default function Home() {
@@ -186,7 +193,14 @@ export default function Home() {
                   </div>
                   <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
                   <div className="flex justify-between items-center">
-                    <p className="text-xs text-gray-400">联系方式：{item.contact}</p>
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={item.user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+                        alt={item.user?.username || '用户'}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                      <span className="text-xs text-gray-500">{item.user?.username || '匿名用户'}</span>
+                    </div>
                     <p className="text-xs text-gray-400">{new Date(item.created_at).toLocaleString()}</p>
                   </div>
                 </div>

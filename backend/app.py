@@ -204,6 +204,7 @@ def get_user_stats():
     
     total_count = Item.query.filter_by(user_id=user_id).count()
     claimed_count = Item.query.filter_by(user_id=user_id, status='claimed').count()
+    resolved_count = Item.query.filter_by(user_id=user_id, status='resolved').count()
     pending_count = Item.query.filter_by(user_id=user_id, status='pending').count()
     
     return jsonify({
@@ -211,9 +212,32 @@ def get_user_stats():
         "data": {
             "total": total_count,
             "claimed": claimed_count,
+            "resolved": resolved_count,
+            "completed": claimed_count + resolved_count,
             "pending": pending_count
         }
     })
+
+@app.route("/api/user/posts", methods=["GET"])
+@jwt_required()
+def get_user_posts():
+    user_id_str = get_jwt_identity()
+    user_id = int(user_id_str)
+    
+    items = Item.query.filter_by(user_id=user_id).order_by(Item.created_at.desc()).all()
+    
+    result = [{
+        "id": item.id,
+        "title": item.title,
+        "category": item.category,
+        "description": item.description,
+        "contact": item.contact,
+        "image": item.image,
+        "status": item.status,
+        "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    } for item in items]
+    
+    return jsonify({"code": 200, "data": result})
 
 @app.route("/api/upload/avatar", methods=["POST"])
 @jwt_required()
@@ -266,19 +290,27 @@ def serve_item_image(filename):
 @app.route("/api/items", methods=["GET"])
 def get_items():
     items = Item.query.order_by(Item.created_at.desc()).all()
-    result = [{
-        "id": item.id,
-        "user_id": item.user_id,
-        "title": item.title,
-        "category": item.category,
-        "description": item.description,
-        "contact": item.contact,
-        "found_time": item.found_time,
-        "found_location": item.found_location,
-        "image": item.image,
-        "status": item.status,
-        "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    } for item in items]
+    result = []
+    for item in items:
+        user = User.query.get(item.user_id)
+        result.append({
+            "id": item.id,
+            "user_id": item.user_id,
+            "title": item.title,
+            "category": item.category,
+            "description": item.description,
+            "contact": item.contact,
+            "found_time": item.found_time,
+            "found_location": item.found_location,
+            "image": item.image,
+            "status": item.status,
+            "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "avatar": user.avatar
+            } if user else None
+        })
     return jsonify(result)
 
 @app.route("/api/items", methods=["POST"])
@@ -346,6 +378,9 @@ def get_item(item_id):
     item = Item.query.get(item_id)
     if not item:
         return jsonify({"code": 404, "msg": "物品未找到"}), 404
+    
+    user = User.query.get(item.user_id)
+    
     return jsonify({
         "code": 200,
         "data": {
@@ -359,7 +394,12 @@ def get_item(item_id):
             "found_location": item.found_location,
             "image": item.image,
             "status": item.status,
-            "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "avatar": user.avatar
+            } if user else None
         }
     })
 
@@ -451,19 +491,27 @@ def search_items():
     
     items = query.all()
     
-    result = [{
-        "id": item.id,
-        "user_id": item.user_id,
-        "title": item.title,
-        "category": item.category,
-        "description": item.description,
-        "contact": item.contact,
-        "found_time": item.found_time,
-        "found_location": item.found_location,
-        "image": item.image,
-        "status": item.status,
-        "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    } for item in items]
+    result = []
+    for item in items:
+        user = User.query.get(item.user_id)
+        result.append({
+            "id": item.id,
+            "user_id": item.user_id,
+            "title": item.title,
+            "category": item.category,
+            "description": item.description,
+            "contact": item.contact,
+            "found_time": item.found_time,
+            "found_location": item.found_location,
+            "image": item.image,
+            "status": item.status,
+            "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "avatar": user.avatar
+            } if user else None
+        })
     
     return jsonify(result)
 
