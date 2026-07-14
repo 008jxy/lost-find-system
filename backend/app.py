@@ -433,6 +433,40 @@ def delete_item(item_id):
     
     return jsonify({"code": 200, "msg": "删除成功"})
 
+@app.route("/api/items/search", methods=["GET"])
+def search_items():
+    keyword = request.args.get('keyword', '')
+    category = request.args.get('category', 'all')
+    
+    query = Item.query
+    
+    if keyword:
+        query = query.filter(
+            (Item.title.ilike(f'%{keyword}%')) | 
+            (Item.description.ilike(f'%{keyword}%'))
+        )
+    
+    if category != 'all':
+        query = query.filter_by(category=category)
+    
+    items = query.all()
+    
+    result = [{
+        "id": item.id,
+        "user_id": item.user_id,
+        "title": item.title,
+        "category": item.category,
+        "description": item.description,
+        "contact": item.contact,
+        "found_time": item.found_time,
+        "found_location": item.found_location,
+        "image": item.image,
+        "status": item.status,
+        "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    } for item in items]
+    
+    return jsonify(result)
+
 # ========== 通知接口 ==========
 @app.route("/api/notifications", methods=["GET"])
 @jwt_required()

@@ -19,23 +19,45 @@ export default function Home() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'lost' | 'found'>('all');
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/items')
-      .then((res) => res.json())
-      .then((data) => {
-        setItems(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('获取数据失败:', error);
-        setLoading(false);
-      });
-  }, []);
+    fetchItems();
+  }, [filter]);
 
-  const filteredItems = items.filter(item => 
-    filter === 'all' || item.category === filter
-  );
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchItems();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    try {
+      let url = 'http://localhost:5000/api/items';
+      if (searchKeyword) {
+        url = `http://localhost:5000/api/items/search?keyword=${encodeURIComponent(searchKeyword)}&category=${filter}`;
+      }
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (searchKeyword && Array.isArray(data)) {
+        setItems(data);
+      } else if (!searchKeyword) {
+        setItems(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('获取数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredItems = searchKeyword 
+    ? items 
+    : items.filter(item => filter === 'all' || item.category === filter);
 
   const lostCount = items.filter(i => i.category === 'lost').length;
   const foundCount = items.filter(i => i.category === 'found').length;
@@ -70,38 +92,56 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-6 py-3 rounded-xl font-medium transition-all ${
-            filter === 'all' ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          全部 ({items.length})
-        </button>
-        <button
-          onClick={() => setFilter('lost')}
-          className={`px-6 py-3 rounded-xl font-medium transition-all ${
-            filter === 'lost' ? 'bg-red-500 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          🔴 寻物 ({lostCount})
-        </button>
-        <button
-          onClick={() => setFilter('found')}
-          className={`px-6 py-3 rounded-xl font-medium transition-all ${
-            filter === 'found' ? 'bg-green-500 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          🟢 招领 ({foundCount})
-        </button>
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 relative">
+          <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="搜索物品名称或描述..."
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
+        <div className="flex gap-4">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${
+              filter === 'all' ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            全部 ({searchKeyword ? filteredItems.length : items.length})
+          </button>
+          <button
+            onClick={() => setFilter('lost')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${
+              filter === 'lost' ? 'bg-red-500 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            🔴 寻物 ({lostCount})
+          </button>
+          <button
+            onClick={() => setFilter('found')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${
+              filter === 'found' ? 'bg-green-500 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            🟢 招领 ({foundCount})
+          </button>
+        </div>
       </div>
 
       {filteredItems.length === 0 ? (
         <div className="bg-white rounded-lg shadow-lg p-12 text-center">
           <div className="text-6xl mb-4">📭</div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">暂无帖子</h2>
-          <p className="text-gray-500">成为第一个发布帖子的人吧！</p>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">
+            {searchKeyword ? '未找到相关帖子' : '暂无帖子'}
+          </h2>
+          <p className="text-gray-500">
+            {searchKeyword ? '试试其他关键词吧！' : '成为第一个发布帖子的人吧！'}
+          </p>
           <Link
             href="/profile"
             className="inline-block mt-4 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
