@@ -110,7 +110,7 @@ export default function Home() {
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="space-y-4">
           {filteredItems.map((item) => (
             <Link
               key={item.id}

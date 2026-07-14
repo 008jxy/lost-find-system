@@ -30,7 +30,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-gray-50">
         <nav className="bg-white shadow-md sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <Link href="/" className="text-2xl font-bold text-blue-600">
                 📦 失物招领
@@ -70,11 +70,11 @@ export default function RootLayout({
             </div>
           </div>
         </nav>
-        <main className="max-w-6xl mx-auto px-4 py-8 flex-1">
+        <main className="w-full px-4 sm:px-6 lg:px-8 py-8 flex-1">
           {children}
         </main>
         <footer className="bg-white border-t mt-12">
-          <div className="max-w-6xl mx-auto px-4 py-6 text-center text-gray-400 text-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-gray-400 text-sm">
             失物招领系统 © 2026 | AI文本相似度匹配
           </div>
         </footer>

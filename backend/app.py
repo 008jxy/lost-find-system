@@ -45,6 +45,8 @@ class Item(db.Model):
     category = db.Column(db.String(10), nullable=False)
     description = db.Column(db.Text, nullable=False)
     contact = db.Column(db.String(100), nullable=False)
+    found_time = db.Column(db.String(50), default='')
+    found_location = db.Column(db.String(200), default='')
     image = db.Column(db.String(255), default='')
     status = db.Column(db.String(20), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -224,6 +226,8 @@ def get_items():
         "category": item.category,
         "description": item.description,
         "contact": item.contact,
+        "found_time": item.found_time,
+        "found_location": item.found_location,
         "image": item.image,
         "status": item.status,
         "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -239,6 +243,8 @@ def create_item():
     category = request.form.get('category')
     description = request.form.get('description')
     contact = request.form.get('contact')
+    found_time = request.form.get('found_time', '')
+    found_location = request.form.get('found_location', '')
     
     if not title or not category or not description or not contact:
         return jsonify({"code": 400, "msg": "标题、类型、描述、联系方式不能为空"}), 400
@@ -260,6 +266,8 @@ def create_item():
         category=category,
         description=description,
         contact=contact,
+        found_time=found_time,
+        found_location=found_location,
         image=image_url,
         status='pending'
     )
@@ -276,6 +284,8 @@ def create_item():
             "category": new_item.category,
             "description": new_item.description,
             "contact": new_item.contact,
+            "found_time": new_item.found_time,
+            "found_location": new_item.found_location,
             "image": new_item.image,
             "status": new_item.status,
             "created_at": new_item.created_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -296,6 +306,8 @@ def get_item(item_id):
             "category": item.category,
             "description": item.description,
             "contact": item.contact,
+            "found_time": item.found_time,
+            "found_location": item.found_location,
             "image": item.image,
             "status": item.status,
             "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -309,18 +321,50 @@ def update_item(item_id):
     item = Item.query.get(item_id)
     
     if not item:
-        return jsonify({"error": "物品未找到"}), 404
+        return jsonify({"code": 404, "msg": "物品未找到"}), 404
     
     if item.user_id != int(user_id_str):
-        return jsonify({"error": "无权限修改此物品"}), 403
+        return jsonify({"code": 403, "msg": "无权限修改此物品"}), 403
     
     data = request.get_json()
-    item.status = data.get("status", item.status)
+    
+    if 'title' in data:
+        item.title = data['title']
+    if 'description' in data:
+        item.description = data['description']
+    if 'contact' in data:
+        item.contact = data['contact']
+    if 'found_time' in data:
+        item.found_time = data['found_time']
+    if 'found_location' in data:
+        item.found_location = data['found_location']
+    
+    if 'status' in data:
+        new_status = data['status']
+        if item.category == 'lost':
+            if new_status not in ['pending', 'resolved']:
+                return jsonify({"code": 400, "msg": "寻物帖子仅支持待认领和已解决状态"}), 400
+        else:
+            if new_status not in ['pending', 'claimed']:
+                return jsonify({"code": 400, "msg": "招领帖子仅支持待认领和已认领状态"}), 400
+        item.status = new_status
+    
     db.session.commit()
     
     return jsonify({
-        "id": item.id,
-        "status": item.status
+        "code": 200,
+        "msg": "更新成功",
+        "data": {
+            "id": item.id,
+            "title": item.title,
+            "category": item.category,
+            "description": item.description,
+            "contact": item.contact,
+            "found_time": item.found_time,
+            "found_location": item.found_location,
+            "status": item.status,
+            "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
     })
 
 @app.route("/api/items/<int:item_id>", methods=["DELETE"])
@@ -330,15 +374,15 @@ def delete_item(item_id):
     item = Item.query.get(item_id)
     
     if not item:
-        return jsonify({"error": "物品未找到"}), 404
+        return jsonify({"code": 404, "msg": "物品未找到"}), 404
     
     if item.user_id != int(user_id_str):
-        return jsonify({"error": "无权限删除此物品"}), 403
+        return jsonify({"code": 403, "msg": "无权限删除此物品"}), 403
     
     db.session.delete(item)
     db.session.commit()
     
-    return jsonify({"msg": "删除成功"})
+    return jsonify({"code": 200, "msg": "删除成功"})
 
 # ========== 通知接口 ==========
 @app.route("/api/notifications", methods=["GET"])

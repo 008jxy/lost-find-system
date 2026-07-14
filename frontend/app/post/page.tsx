@@ -8,6 +8,8 @@ export default function PostPage() {
   const [category, setCategory] = useState<'lost' | 'found'>('lost');
   const [description, setDescription] = useState('');
   const [contact, setContact] = useState('');
+  const [foundTime, setFoundTime] = useState('');
+  const [foundLocation, setFoundLocation] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
   const [error, setError] = useState('');
@@ -15,6 +17,9 @@ export default function PostPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  const now = new Date();
+  const nowISO = now.toISOString().slice(0, 16);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -66,6 +71,8 @@ export default function PostPage() {
       formData.append('category', category);
       formData.append('description', description);
       formData.append('contact', contact);
+      formData.append('found_time', foundTime);
+      formData.append('found_location', foundLocation);
       if (image) {
         formData.append('image', image);
       }
@@ -97,12 +104,11 @@ export default function PostPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto">
-      <div className="bg-white rounded-lg shadow-xl p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600 mb-2">📦 发布帖子</h1>
-          <p className="text-gray-500">发布寻物启事或招领信息</p>
-        </div>
+    <div className="bg-white rounded-xl shadow-xl p-8">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-blue-600 mb-2">📦 发布帖子</h1>
+        <p className="text-gray-500">发布寻物启事或招领信息</p>
+      </div>
 
         {error && (
           <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg mb-4">
@@ -111,9 +117,9 @@ export default function PostPage() {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
+          <div className="mb-6">
             <label className="block text-gray-700 text-sm font-medium mb-2">
-              类型
+              类型 <span className="text-red-500">*</span>
             </label>
             <div className="flex space-x-4">
               <label className="flex items-center">
@@ -141,9 +147,9 @@ export default function PostPage() {
             </div>
           </div>
 
-          <div className="mb-4">
+          <div className="mb-6">
             <label className="block text-gray-700 text-sm font-medium mb-2">
-              标题
+              标题 <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -155,9 +161,9 @@ export default function PostPage() {
             />
           </div>
 
-          <div className="mb-4">
+          <div className="mb-6">
             <label className="block text-gray-700 text-sm font-medium mb-2">
-              详细描述
+              详细描述 <span className="text-red-500">*</span>
             </label>
             <textarea
               value={description}
@@ -171,7 +177,7 @@ export default function PostPage() {
 
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-medium mb-2">
-              联系方式
+              联系方式 <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -180,6 +186,34 @@ export default function PostPage() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               placeholder="请输入手机号或微信号"
               required
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-medium mb-2">
+              拾得时间
+            </label>
+            <input
+              type="datetime-local"
+              value={foundTime}
+              onChange={(e) => setFoundTime(e.target.value)}
+              max={nowISO}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors min-w-full"
+              placeholder="请选择拾得时间"
+              style={{ width: '100%', minWidth: '100%' }}
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-medium mb-2">
+              拾得地点
+            </label>
+            <input
+              type="text"
+              value={foundLocation}
+              onChange={(e) => setFoundLocation(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              placeholder="请输入拾得地点"
             />
           </div>
 
@@ -230,7 +264,6 @@ export default function PostPage() {
             {loading ? '发布中...' : '发布'}
           </button>
         </form>
-      </div>
     </div>
   );
 }

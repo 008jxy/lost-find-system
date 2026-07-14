@@ -11,6 +11,8 @@ interface Item {
   category: 'lost' | 'found';
   description: string;
   contact: string;
+  found_time: string;
+  found_location: string;
   image: string;
   status: 'pending' | 'claimed' | 'resolved';
   created_at: string;
@@ -24,6 +26,14 @@ export default function ItemDetail() {
   const [error, setError] = useState('');
   const [showImageModal, setShowImageModal] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    contact: '',
+    found_time: '',
+    found_location: '',
+  });
 
   useEffect(() => {
     const userId = localStorage.getItem('user_id');
@@ -41,6 +51,13 @@ export default function ItemDetail() {
       const data = await response.json();
       if (data.code === 200) {
         setItem(data.data);
+        setEditForm({
+          title: data.data.title,
+          description: data.data.description,
+          contact: data.data.contact,
+          found_time: data.data.found_time,
+          found_location: data.data.found_location,
+        });
       } else {
         setError(data.msg || '获取帖子失败');
       }
@@ -65,10 +82,60 @@ export default function ItemDetail() {
         body: JSON.stringify({ status: newStatus }),
       });
       const data = await response.json();
-      if (response.ok) {
+      if (data.code === 200) {
         setItem(prev => prev ? { ...prev, status: newStatus } : null);
       } else {
-        setError(data.error || '操作失败');
+        setError(data.msg || '操作失败');
+      }
+    } catch (err) {
+      setError('网络错误，请稍后重试');
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token || !item) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/items/${item.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(editForm),
+      });
+      const data = await response.json();
+      if (data.code === 200) {
+        setItem(data.data);
+        setIsEditing(false);
+      } else {
+        setError(data.msg || '编辑失败');
+      }
+    } catch (err) {
+      setError('网络错误，请稍后重试');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('确定要删除这个帖子吗？')) return;
+
+    const token = localStorage.getItem('token');
+    if (!token || !item) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/items/${item.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.code === 200) {
+        router.push('/');
+      } else {
+        setError(data.msg || '删除失败');
       }
     } catch (err) {
       setError('网络错误，请稍后重试');
@@ -97,9 +164,10 @@ export default function ItemDetail() {
   }
 
   const isOwner = currentUserId === item.user_id;
+  const now = new Date().toISOString().slice(0, 16);
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto lg:max-w-5xl">
       <div className="bg-white rounded-xl shadow-xl overflow-hidden">
         {item.image && (
           <div className="relative cursor-pointer" onClick={() => setShowImageModal(true)}>
@@ -138,37 +206,137 @@ export default function ItemDetail() {
               </div>
               <p className="text-sm text-gray-400">{new Date(item.created_at).toLocaleString()}</p>
             </div>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">详细描述</h3>
-            <p className="text-gray-600 leading-relaxed">{item.description}</p>
-          </div>
-
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">联系方式</h3>
-            <p className="text-gray-600">{item.contact}</p>
-          </div>
-
-          {isOwner && item.status !== 'resolved' && (
-            <div className="flex gap-4 pt-6 border-t">
-              {item.status === 'pending' && (
+            {isOwner && (
+              <div className="flex gap-2">
                 <button
-                  onClick={() => handleStatusChange('claimed')}
-                  className="flex-1 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
                 >
-                  标记为已认领
+                  {isEditing ? '取消' : '编辑'}
                 </button>
-              )}
-              {(item.status === 'pending' || item.status === 'claimed') && (
                 <button
-                  onClick={() => handleStatusChange('resolved')}
-                  className="flex-1 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
+                  onClick={handleDelete}
+                  className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
                 >
-                  标记为已解决
+                  删除
                 </button>
+              </div>
+            )}
+          </div>
+
+          {isEditing ? (
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-gray-700 text-sm font-medium mb-2">标题</label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 text-sm font-medium mb-2">详细描述</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={4}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 text-sm font-medium mb-2">联系方式</label>
+                <input
+                  type="text"
+                  value={editForm.contact}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, contact: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 text-sm font-medium mb-2">拾得时间</label>
+                <input
+                  type="datetime-local"
+                  value={editForm.found_time}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, found_time: e.target.value }))}
+                  max={now}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 text-sm font-medium mb-2">拾得地点</label>
+                <input
+                  type="text"
+                  value={editForm.found_location}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, found_location: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                保存修改
+              </button>
+            </form>
+          ) : (
+            <>
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">详细描述</h3>
+                <p className="text-gray-600 leading-relaxed">{item.description}</p>
+              </div>
+
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">联系方式</h3>
+                <p className="text-gray-600">{item.contact}</p>
+              </div>
+
+              {(item.found_time || item.found_location) && (
+                <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">拾得信息</h3>
+                  {item.found_time && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-gray-600">拾得时间：{item.found_time}</span>
+                    </div>
+                  )}
+                  {item.found_location && (
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="text-gray-600">拾得地点：{item.found_location}</span>
+                    </div>
+                  )}
+                </div>
               )}
-            </div>
+
+              {isOwner && item.status === 'pending' && (
+                <div className="flex gap-4 pt-6 border-t">
+                  {item.category === 'lost' ? (
+                    <button
+                      onClick={() => handleStatusChange('resolved')}
+                      className="flex-1 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
+                    >
+                      标记为已解决
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleStatusChange('claimed')}
+                      className="flex-1 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                    >
+                      标记为已认领
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

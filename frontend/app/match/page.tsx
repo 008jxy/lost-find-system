@@ -75,7 +75,7 @@ export default function MatchPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-blue-600 mb-2">🤖 AI智能匹配</h1>
         <p className="text-gray-500">基于TF-IDF和余弦相似度算法，自动匹配相似帖子</p>

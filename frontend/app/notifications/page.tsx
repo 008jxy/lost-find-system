@@ -73,7 +73,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-blue-600 mb-2">🔔 通知中心</h1>
         <p className="text-gray-500">AI匹配推送的相似帖子提醒</p>
