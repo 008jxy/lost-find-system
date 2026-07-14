@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [gender, setGender] = useState('male');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function RegisterPage() {
       const response = await fetch('http://localhost:5000/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email, password, gender }),
       });
 
       const data = await response.json();
@@ -86,6 +87,36 @@ export default function RegisterPage() {
               placeholder="请输入邮箱"
               required
             />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-medium mb-2">
+              性别
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="male"
+                  checked={gender === 'male'}
+                  onChange={(e) => setGender(e.target.value)}
+                  className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                />
+                <span className="text-gray-700">男生</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="female"
+                  checked={gender === 'female'}
+                  onChange={(e) => setGender(e.target.value)}
+                  className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                />
+                <span className="text-gray-700">女生</span>
+              </label>
+            </div>
           </div>
 
           <div className="mb-4">

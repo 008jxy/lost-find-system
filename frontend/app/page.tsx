@@ -195,7 +195,7 @@ export default function Home() {
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <img
-                        src={item.user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+                        src={item.user?.avatar || '/avatar-male.jpg'}
                         alt={item.user?.username || '用户'}
                         className="w-6 h-6 rounded-full object-cover"
                       />

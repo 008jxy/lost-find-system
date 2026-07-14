@@ -29,7 +29,8 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    avatar = db.Column(db.String(255), default='')
+    avatar = db.Column(db.String(255), default='/avatar-male.jpg')
+    gender = db.Column(db.String(10), default='male')
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     def set_password(self, password):
@@ -80,6 +81,7 @@ def register():
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
+    gender = data.get('gender', 'male')
 
     if not username or not email or not password:
         return jsonify({"code": 400, "msg": "用户名、邮箱、密码不能为空"}), 400
@@ -90,16 +92,12 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"code": 400, "msg": "邮箱已被注册"}), 400
 
-    user = User(username=username, email=email)
+    if gender not in ['male', 'female']:
+        gender = 'male'
+
+    user = User(username=username, email=email, gender=gender)
     user.set_password(password)
-    default_avatars = [
-        'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-        'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-        'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-        'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
-        'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
-    ]
-    user.avatar = default_avatars[hash(username) % len(default_avatars)]
+    user.avatar = '/avatar-female.jpg' if gender == 'female' else '/avatar-male.jpg'
     db.session.add(user)
     db.session.commit()
 
@@ -127,7 +125,7 @@ def login():
             "token": access_token,
             "username": user.username,
             "user_id": user.id,
-            "avatar": user.avatar
+            "avatar": user.avatar if user.avatar else '/avatar-male.jpg'
         }
     })
 
@@ -144,7 +142,7 @@ def get_user():
             "id": user.id,
             "username": user.username,
             "email": user.email,
-            "avatar": user.avatar,
+            "avatar": user.avatar if user.avatar else '/avatar-male.jpg',
             "created_at": user.created_at.strftime("%Y-%m-%d %H:%M:%S")
         }
     })

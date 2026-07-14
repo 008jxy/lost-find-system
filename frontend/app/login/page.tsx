@@ -29,7 +29,7 @@ export default function LoginPage() {
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('username', data.data.username);
         localStorage.setItem('user_id', data.data.user_id?.toString() || '');
-        localStorage.setItem('avatar', data.data.avatar || '');
+        localStorage.setItem('avatar', data.data.avatar || '/avatar-male.jpg');
         router.push('/');
       } else {
         setError(data.msg || '登录失败');

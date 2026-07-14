@@ -283,7 +283,7 @@ export default function Profile() {
         <div className="flex items-center gap-6">
           <div className="relative">
             <img
-              src={avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+              src={avatar || '/avatar-male.jpg'}
               alt="头像"
               className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
             />
