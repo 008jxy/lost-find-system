@@ -149,6 +149,53 @@ def get_user():
         }
     })
 
+@app.route("/api/user", methods=["PUT"])
+@jwt_required()
+def update_user():
+    user_id_str = get_jwt_identity()
+    user = User.query.get(int(user_id_str))
+    if not user:
+        return jsonify({"code": 404, "msg": "用户不存在"}), 404
+
+    data = request.get_json()
+    update_fields = {}
+
+    if 'username' in data:
+        new_username = data['username'].strip()
+        if not new_username:
+            return jsonify({"code": 400, "msg": "用户名不能为空"}), 400
+        if new_username != user.username:
+            if User.query.filter_by(username=new_username).first():
+                return jsonify({"code": 400, "msg": "用户名已存在"}), 400
+            user.username = new_username
+            update_fields['username'] = new_username
+
+    if 'password' in data:
+        new_password = data['password']
+        old_password = data.get('old_password')
+        
+        if not old_password:
+            return jsonify({"code": 400, "msg": "请输入原密码"}), 400
+        
+        if not user.check_password(old_password):
+            return jsonify({"code": 400, "msg": "原密码错误"}), 400
+        
+        if not new_password or len(new_password) < 6:
+            return jsonify({"code": 400, "msg": "新密码长度不能少于6位"}), 400
+        
+        user.set_password(new_password)
+        update_fields['password'] = 'updated'
+
+    db.session.commit()
+
+    return jsonify({
+        "code": 200,
+        "msg": "更新成功",
+        "data": {
+            "username": user.username
+        }
+    })
+
 @app.route("/api/user/stats", methods=["GET"])
 @jwt_required()
 def get_user_stats():

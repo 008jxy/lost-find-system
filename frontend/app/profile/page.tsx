@@ -26,6 +26,16 @@ export default function Profile() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [isValidated, setIsValidated] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [editUsernameError, setEditUsernameError] = useState('');
+  const [editUsernameSuccess, setEditUsernameSuccess] = useState('');
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -139,6 +149,102 @@ export default function Profile() {
   const handleLogout = () => {
     clearAuthStorage();
     window.location.href = '/';
+  };
+
+  const handleUsernameEdit = async () => {
+    setEditUsernameError('');
+    setEditUsernameSuccess('');
+    
+    if (!editUsername.trim()) {
+      setEditUsernameError('用户名不能为空');
+      return;
+    }
+    
+    if (editUsername.trim() === username) {
+      setEditUsernameError('新用户名与原用户名相同');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/user', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: editUsername.trim() }),
+      });
+
+      const data = await response.json();
+      if (data.code === 200) {
+        setUsername(data.data.username);
+        localStorage.setItem('username', data.data.username);
+        setEditUsernameSuccess('用户名修改成功');
+        setIsEditingUsername(false);
+        setEditUsername('');
+      } else {
+        setEditUsernameError(data.msg || '修改失败');
+      }
+    } catch (error) {
+      setEditUsernameError('网络错误，请稍后重试');
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+    
+    if (!oldPassword) {
+      setPasswordError('请输入原密码');
+      return;
+    }
+    
+    if (!newPassword) {
+      setPasswordError('请输入新密码');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setPasswordError('新密码长度不能少于6位');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordError('两次输入的密码不一致');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/user', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          password: newPassword,
+          old_password: oldPassword
+        }),
+      });
+
+      const data = await response.json();
+      if (data.code === 200) {
+        setPasswordSuccess('密码修改成功');
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setPasswordError(data.msg || '修改失败');
+      }
+    } catch (error) {
+      setPasswordError('网络错误，请稍后重试');
+    }
   };
 
   if (!isValidated) {
@@ -266,6 +372,114 @@ export default function Profile() {
             </div>
           </Link>
         </div>
+      </div>
+
+      <div className="space-y-4">
+        <button
+          onClick={() => setIsEditingUsername(!isEditingUsername)}
+          className="w-full flex items-center justify-between p-4 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow"
+        >
+          <span className="font-medium text-gray-800">修改用户名</span>
+          <svg className={`w-5 h-5 text-gray-400 transition-transform ${isEditingUsername ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {isEditingUsername && (
+          <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
+            <input
+              type="text"
+              value={editUsername}
+              onChange={(e) => setEditUsername(e.target.value)}
+              placeholder="输入新用户名"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            {editUsernameError && (
+              <div className="text-red-500 text-sm">{editUsernameError}</div>
+            )}
+            {editUsernameSuccess && (
+              <div className="text-green-500 text-sm">{editUsernameSuccess}</div>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleUsernameEdit}
+                className="px-6 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+              >
+                保存
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditingUsername(false);
+                  setEditUsername('');
+                  setEditUsernameError('');
+                }}
+                className="px-6 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => setIsEditingPassword(!isEditingPassword)}
+          className="w-full flex items-center justify-between p-4 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow"
+        >
+          <span className="font-medium text-gray-800">修改密码</span>
+          <svg className={`w-5 h-5 text-gray-400 transition-transform ${isEditingPassword ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {isEditingPassword && (
+          <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
+            <input
+              type="password"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              placeholder="原密码"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="新密码（至少6位）"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="确认新密码"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            {passwordError && (
+              <div className="text-red-500 text-sm">{passwordError}</div>
+            )}
+            {passwordSuccess && (
+              <div className="text-green-500 text-sm">{passwordSuccess}</div>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handlePasswordChange}
+                className="px-6 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+              >
+                保存
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditingPassword(false);
+                  setOldPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                  setPasswordError('');
+                }}
+                className="px-6 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
