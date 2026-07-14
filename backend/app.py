@@ -14,9 +14,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lost_find.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'super-secret-key-change-in-production'
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads', 'avatars')
+app.config['ITEM_IMAGE_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads', 'items')
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['ITEM_IMAGE_FOLDER'], exist_ok=True)
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
@@ -43,6 +45,7 @@ class Item(db.Model):
     category = db.Column(db.String(10), nullable=False)
     description = db.Column(db.Text, nullable=False)
     contact = db.Column(db.String(100), nullable=False)
+    image = db.Column(db.String(255), default='')
     status = db.Column(db.String(20), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.now)
 
@@ -200,9 +203,15 @@ def upload_avatar():
         "data": {"avatar": user.avatar}
     })
 
+# 头像静态文件服务
 @app.route("/uploads/avatars/<filename>")
 def serve_avatar(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# 物品图片静态文件服务
+@app.route("/uploads/items/<filename>")
+def serve_item_image(filename):
+    return send_from_directory(app.config['ITEM_IMAGE_FOLDER'], filename)
 
 # ========== 物品接口 ==========
 @app.route("/api/items", methods=["GET"])
@@ -215,6 +224,7 @@ def get_items():
         "category": item.category,
         "description": item.description,
         "contact": item.contact,
+        "image": item.image,
         "status": item.status,
         "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
     } for item in items]
@@ -224,44 +234,72 @@ def get_items():
 @jwt_required()
 def create_item():
     user_id_str = get_jwt_identity()
-    data = request.get_json()
+    
+    title = request.form.get('title')
+    category = request.form.get('category')
+    description = request.form.get('description')
+    contact = request.form.get('contact')
+    
+    if not title or not category or not description or not contact:
+        return jsonify({"code": 400, "msg": "标题、类型、描述、联系方式不能为空"}), 400
+    
+    image_url = ''
+    if 'image' in request.files:
+        file = request.files['image']
+        if file.filename != '':
+            allowed_extensions = {'jpg', 'jpeg', 'png', 'webp'}
+            if '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
+                filename = f"{uuid.uuid4().hex}.{file.filename.rsplit('.', 1)[1].lower()}"
+                file_path = os.path.join(app.config['ITEM_IMAGE_FOLDER'], filename)
+                file.save(file_path)
+                image_url = f"http://localhost:5000/uploads/items/{filename}"
     
     new_item = Item(
         user_id=int(user_id_str),
-        title=data.get('title'),
-        category=data.get('category'),
-        description=data.get('description'),
-        contact=data.get('contact'),
+        title=title,
+        category=category,
+        description=description,
+        contact=contact,
+        image=image_url,
         status='pending'
     )
     db.session.add(new_item)
     db.session.commit()
 
     return jsonify({
-        "id": new_item.id,
-        "user_id": new_item.user_id,
-        "title": new_item.title,
-        "category": new_item.category,
-        "description": new_item.description,
-        "contact": new_item.contact,
-        "status": new_item.status,
-        "created_at": new_item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        "code": 200,
+        "msg": "发布成功",
+        "data": {
+            "id": new_item.id,
+            "user_id": new_item.user_id,
+            "title": new_item.title,
+            "category": new_item.category,
+            "description": new_item.description,
+            "contact": new_item.contact,
+            "image": new_item.image,
+            "status": new_item.status,
+            "created_at": new_item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
     }), 201
 
 @app.route("/api/items/<int:item_id>", methods=["GET"])
 def get_item(item_id):
     item = Item.query.get(item_id)
     if not item:
-        return jsonify({"error": "物品未找到"}), 404
+        return jsonify({"code": 404, "msg": "物品未找到"}), 404
     return jsonify({
-        "id": item.id,
-        "user_id": item.user_id,
-        "title": item.title,
-        "category": item.category,
-        "description": item.description,
-        "contact": item.contact,
-        "status": item.status,
-        "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        "code": 200,
+        "data": {
+            "id": item.id,
+            "user_id": item.user_id,
+            "title": item.title,
+            "category": item.category,
+            "description": item.description,
+            "contact": item.contact,
+            "image": item.image,
+            "status": item.status,
+            "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
     })
 
 @app.route("/api/items/<int:item_id>", methods=["PUT"])

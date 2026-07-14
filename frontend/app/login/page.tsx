@@ -28,6 +28,7 @@ export default function LoginPage() {
       if (response.ok && data.code === 200 && data.data?.token) {
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('username', data.data.username);
+        localStorage.setItem('user_id', data.data.user_id?.toString() || '');
         localStorage.setItem('avatar', data.data.avatar || '');
         router.push('/');
       } else {

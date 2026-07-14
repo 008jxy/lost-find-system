@@ -124,6 +124,7 @@ export default function Profile() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('user_id');
     localStorage.removeItem('avatar');
     window.location.href = '/';
   };
