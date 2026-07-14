@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 
@@ -77,7 +77,7 @@ export default function MatchPage() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-blue-600 mb-2">🤖 AI智能匹配</h1>
+        <h1 className="text-3xl font-bold text-purple-600 mb-2">🤖 AI智能匹配</h1>
         <p className="text-gray-500">基于TF-IDF和余弦相似度算法，自动匹配相似帖子</p>
       </div>
 
@@ -92,7 +92,7 @@ export default function MatchPage() {
                 value="lost"
                 checked={inputCategory === 'lost'}
                 onChange={(e) => setInputCategory('lost')}
-                className="w-4 h-4 text-blue-600"
+                className="w-4 h-4 text-purple-600"
               />
               <span className="ml-2 text-gray-700">寻物启事</span>
             </label>
@@ -103,7 +103,7 @@ export default function MatchPage() {
                 value="found"
                 checked={inputCategory === 'found'}
                 onChange={(e) => setInputCategory('found')}
-                className="w-4 h-4 text-blue-600"
+                className="w-4 h-4 text-purple-600"
               />
               <span className="ml-2 text-gray-700">失物招领</span>
             </label>
@@ -113,14 +113,14 @@ export default function MatchPage() {
             type="text"
             value={inputTitle}
             onChange={(e) => setInputTitle(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             placeholder="物品名称"
           />
 
           <textarea
             value={inputDesc}
             onChange={(e) => setInputDesc(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             placeholder="详细描述"
             rows={3}
           />
@@ -128,7 +128,7 @@ export default function MatchPage() {
           <button
             onClick={handleSingleMatch}
             disabled={loading || !inputTitle || !inputDesc}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? '匹配中...' : '开始匹配'}
           </button>
@@ -178,7 +178,7 @@ export default function MatchPage() {
             {matches.map((match, index) => (
               <div key={index} className="border rounded-lg p-4">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-medium text-blue-600">匹配对 #{index + 1}</span>
+                  <span className="text-sm font-medium text-purple-600">匹配对 #{index + 1}</span>
                   <span className={`text-sm px-3 py-1 rounded ${
                     match.similarity >= 70 ? 'bg-green-100 text-green-700' :
                     match.similarity >= 40 ? 'bg-yellow-100 text-yellow-700' :

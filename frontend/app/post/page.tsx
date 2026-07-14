@@ -1,7 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { validateToken, clearAuthStorage } from '../utils/auth';
 
 export default function PostPage() {
   const [title, setTitle] = useState('');
@@ -15,6 +16,7 @@ export default function PostPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isValidated, setIsValidated] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -22,12 +24,17 @@ export default function PostPage() {
   const nowISO = now.toISOString().slice(0, 16);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-    } else {
-      setIsLoggedIn(true);
-    }
+    const checkAuth = async () => {
+      const isValid = await validateToken();
+      if (!isValid) {
+        clearAuthStorage();
+        router.push('/login');
+      } else {
+        setIsLoggedIn(true);
+      }
+      setIsValidated(true);
+    };
+    checkAuth();
   }, [router]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,6 +106,10 @@ export default function PostPage() {
     }
   };
 
+  if (!isValidated) {
+    return <div className="text-center py-8">验证中...</div>;
+  }
+
   if (!isLoggedIn) {
     return <div className="text-center py-8">正在跳转登录页面...</div>;
   }
@@ -106,7 +117,7 @@ export default function PostPage() {
   return (
     <div className="bg-white rounded-xl shadow-xl p-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-blue-600 mb-2">📦 发布帖子</h1>
+        <h1 className="text-3xl font-bold text-purple-600 mb-2">📦 发布帖子</h1>
         <p className="text-gray-500">发布寻物启事或招领信息</p>
       </div>
 
@@ -129,7 +140,7 @@ export default function PostPage() {
                   value="lost"
                   checked={category === 'lost'}
                   onChange={(e) => setCategory('lost')}
-                  className="w-4 h-4 text-blue-600"
+                  className="w-4 h-4 text-purple-600"
                 />
                 <span className="ml-2 text-gray-700">寻物启事</span>
               </label>
@@ -140,7 +151,7 @@ export default function PostPage() {
                   value="found"
                   checked={category === 'found'}
                   onChange={(e) => setCategory('found')}
-                  className="w-4 h-4 text-blue-600"
+                  className="w-4 h-4 text-purple-600"
                 />
                 <span className="ml-2 text-gray-700">失物招领</span>
               </label>
@@ -155,7 +166,7 @@ export default function PostPage() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
               placeholder="请输入物品名称"
               required
             />
@@ -168,7 +179,7 @@ export default function PostPage() {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
               placeholder="请描述物品特征、丢失/捡到地点、时间等信息"
               rows={4}
               required
@@ -183,7 +194,7 @@ export default function PostPage() {
               type="text"
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
               placeholder="请输入手机号或微信号"
               required
             />
@@ -198,7 +209,7 @@ export default function PostPage() {
               value={foundTime}
               onChange={(e) => setFoundTime(e.target.value)}
               max={nowISO}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors min-w-full"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors min-w-full"
               placeholder="请选择拾得时间"
               style={{ width: '100%', minWidth: '100%' }}
             />
@@ -212,7 +223,7 @@ export default function PostPage() {
               type="text"
               value={foundLocation}
               onChange={(e) => setFoundLocation(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
               placeholder="请输入拾得地点"
             />
           </div>
@@ -259,7 +270,7 @@ export default function PostPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-purple-600 text-white py-3 rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {loading ? '发布中...' : '发布'}
           </button>

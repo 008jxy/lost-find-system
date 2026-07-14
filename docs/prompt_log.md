@@ -364,3 +364,20 @@ screenshots/prompt5_发布统计.png
    - 修改首页：帖子卡片支持点击跳转、显示缩略图
 ### 配套截图存放路径
 screenshots/prompt6_详情页.png
+
+## 7、修复会话管理问题
+    -对话时间：2026-07-14 19:30  
+    -对应功能：用户认证、会话管理  
+    -对应文件：frontend/app/utils/auth.ts, frontend/app/profile/page.tsx, frontend/app/post/page.tsx, frontend/app/notifications/page.tsx  
+### 用户提问：
+会话管理有问题：退出登录后刷新页面，“我的”页面还显示用户信息，但点击发布又提示登录过期。需要统一检查 token 有效性，失效时自动清除本地存储并跳转登录页，保证未登录状态下不显示任何用户信息。
+### AI回复内容
+实现统一的会话管理机制：
+1. 创建统一认证工具 `utils/auth.ts`：
+   - `clearAuthStorage()`：统一清除所有认证相关的 localStorage 数据（token、username、user_id、avatar）
+   - `validateToken()`：调用后端 `/api/user` 接口验证 token 有效性，失效时自动清除存储
+2. 更新 profile 页面：页面加载时先调用 `validateToken()` 验证 token，验证失败时清除 localStorage 并显示登录页面
+3. 更新 post 页面：使用统一的 `validateToken()` 验证，失效时自动跳转登录页
+4. 更新 notifications 页面：使用统一的 `validateToken()` 验证，失效时自动跳转登录页
+### 配套截图存放路径
+screenshots/prompt7_会话管理修复.png

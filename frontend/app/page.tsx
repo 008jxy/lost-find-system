@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -47,25 +47,25 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">📦 失物招领系统</h1>
-        <p className="text-blue-100">AI智能匹配，让失物早日回家</p>
+      <div className="rounded-xl p-8" style={{ backgroundColor: '#e4cfe4' }}>
+        <h1 className="text-3xl font-bold mb-2 text-gray-800">📦 失物招领系统</h1>
+        <p className="text-gray-600">AI智能匹配，让失物早日回家</p>
         <div className="flex gap-8 mt-6">
           <div>
-            <div className="text-3xl font-bold">{items.length}</div>
-            <div className="text-blue-200 text-sm">总帖子数</div>
+            <div className="text-3xl font-bold text-gray-800">{items.length}</div>
+            <div className="text-gray-500 text-sm">总帖子数</div>
           </div>
           <div>
-            <div className="text-3xl font-bold">{lostCount}</div>
-            <div className="text-blue-200 text-sm">寻物启事</div>
+            <div className="text-3xl font-bold text-gray-800">{lostCount}</div>
+            <div className="text-gray-500 text-sm">寻物启事</div>
           </div>
           <div>
-            <div className="text-3xl font-bold">{foundCount}</div>
-            <div className="text-blue-200 text-sm">失物招领</div>
+            <div className="text-3xl font-bold text-gray-800">{foundCount}</div>
+            <div className="text-gray-500 text-sm">失物招领</div>
           </div>
           <div>
-            <div className="text-3xl font-bold">{pendingCount}</div>
-            <div className="text-blue-200 text-sm">待认领</div>
+            <div className="text-3xl font-bold text-gray-800">{pendingCount}</div>
+            <div className="text-gray-500 text-sm">待认领</div>
           </div>
         </div>
       </div>
@@ -74,7 +74,7 @@ export default function Home() {
         <button
           onClick={() => setFilter('all')}
           className={`px-6 py-3 rounded-xl font-medium transition-all ${
-            filter === 'all' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            filter === 'all' ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
           全部 ({items.length})
@@ -104,7 +104,7 @@ export default function Home() {
           <p className="text-gray-500">成为第一个发布帖子的人吧！</p>
           <Link
             href="/profile"
-            className="inline-block mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-block mt-4 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             去发布帖子
           </Link>

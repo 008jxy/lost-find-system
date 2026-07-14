@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { validateToken, clearAuthStorage } from '../utils/auth';
 
 interface Notification {
   id: number;
@@ -16,16 +17,22 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isValidated, setIsValidated] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-    } else {
-      setIsLoggedIn(true);
-      fetchNotifications();
-    }
+    const checkAuth = async () => {
+      const isValid = await validateToken();
+      if (!isValid) {
+        clearAuthStorage();
+        router.push('/login');
+      } else {
+        setIsLoggedIn(true);
+        fetchNotifications();
+      }
+      setIsValidated(true);
+    };
+    checkAuth();
   }, [router]);
 
   const fetchNotifications = async () => {
@@ -64,6 +71,10 @@ export default function NotificationsPage() {
     }
   };
 
+  if (!isValidated) {
+    return <div className="text-center py-8">验证中...</div>;
+  }
+
   if (!isLoggedIn) {
     return <div className="text-center py-8">正在跳转登录页面...</div>;
   }
@@ -75,7 +86,7 @@ export default function NotificationsPage() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-blue-600 mb-2">🔔 通知中心</h1>
+        <h1 className="text-3xl font-bold text-purple-600 mb-2">🔔 通知中心</h1>
         <p className="text-gray-500">AI匹配推送的相似帖子提醒</p>
       </div>
 
