@@ -1,9 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from datetime import datetime
 import bcrypt
+import os
+import uuid
 
 app = Flask(__name__)
 CORS(app)
@@ -11,6 +13,10 @@ CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lost_find.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'super-secret-key-change-in-production'
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads', 'avatars')
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
@@ -21,6 +27,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    avatar = db.Column(db.String(255), default='')
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     def set_password(self, password):
@@ -62,7 +69,6 @@ def test_api():
     }
 
 # ========== 用户认证接口 ==========
-# 1. 用户注册
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.get_json()
@@ -81,12 +87,19 @@ def register():
 
     user = User(username=username, email=email)
     user.set_password(password)
+    default_avatars = [
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
+    ]
+    user.avatar = default_avatars[hash(username) % len(default_avatars)]
     db.session.add(user)
     db.session.commit()
 
-    return jsonify({"code": 200, "msg": "注册成功", "data": {"username": username}}), 201
+    return jsonify({"code": 200, "msg": "注册成功", "data": {"username": username, "avatar": user.avatar}}), 201
 
-# 2. 用户登录
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -101,23 +114,23 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({"code": 401, "msg": "用户名或密码错误"}), 401
 
-    access_token = create_access_token(identity={"id": user.id, "username": user.username})
+    access_token = create_access_token(identity=str(user.id))
     return jsonify({
         "code": 200,
         "msg": "登录成功",
         "data": {
             "token": access_token,
             "username": user.username,
-            "user_id": user.id
+            "user_id": user.id,
+            "avatar": user.avatar
         }
     })
 
-# 3. 获取当前用户信息
 @app.route("/api/user", methods=["GET"])
 @jwt_required()
 def get_user():
-    current_user = get_jwt_identity()
-    user = User.query.get(current_user['id'])
+    user_id_str = get_jwt_identity()
+    user = User.query.get(int(user_id_str))
     if not user:
         return jsonify({"code": 404, "msg": "用户不存在"}), 404
     return jsonify({
@@ -126,12 +139,53 @@ def get_user():
             "id": user.id,
             "username": user.username,
             "email": user.email,
+            "avatar": user.avatar,
             "created_at": user.created_at.strftime("%Y-%m-%d %H:%M:%S")
         }
     })
 
+@app.route("/api/upload/avatar", methods=["POST"])
+@jwt_required()
+def upload_avatar():
+    user_id_str = get_jwt_identity()
+    user = User.query.get(int(user_id_str))
+    
+    if not user:
+        return jsonify({"code": 404, "msg": "用户不存在"}), 404
+    
+    if 'file' not in request.files:
+        return jsonify({"code": 400, "msg": "请选择上传的图片"}), 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({"code": 400, "msg": "请选择上传的图片"}), 400
+    
+    allowed_extensions = {'jpg', 'jpeg', 'png', 'webp'}
+    if '.' not in file.filename or file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+        return jsonify({"code": 400, "msg": "仅支持jpg、png、webp格式的图片"}), 400
+    
+    if file.content_length > app.config['MAX_CONTENT_LENGTH']:
+        return jsonify({"code": 400, "msg": "图片大小不能超过2MB"}), 400
+    
+    filename = f"{uuid.uuid4().hex}.{file.filename.rsplit('.', 1)[1].lower()}"
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
+    
+    user.avatar = f"http://localhost:5000/uploads/avatars/{filename}"
+    db.session.commit()
+    
+    return jsonify({
+        "code": 200,
+        "msg": "头像上传成功",
+        "data": {"avatar": user.avatar}
+    })
+
+@app.route("/uploads/avatars/<filename>")
+def serve_avatar(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 # ========== 物品接口 ==========
-# 1. 获取所有物品列表
 @app.route("/api/items", methods=["GET"])
 def get_items():
     items = Item.query.order_by(Item.created_at.desc()).all()
@@ -147,15 +201,14 @@ def get_items():
     } for item in items]
     return jsonify(result)
 
-# 2. 发布新物品（需登录）
 @app.route("/api/items", methods=["POST"])
 @jwt_required()
 def create_item():
-    current_user = get_jwt_identity()
+    user_id_str = get_jwt_identity()
     data = request.get_json()
     
     new_item = Item(
-        user_id=current_user['id'],
+        user_id=int(user_id_str),
         title=data.get('title'),
         category=data.get('category'),
         description=data.get('description'),
@@ -176,7 +229,6 @@ def create_item():
         "created_at": new_item.created_at.strftime("%Y-%m-%d %H:%M:%S")
     }), 201
 
-# 3. 获取单个物品详情
 @app.route("/api/items/<int:item_id>", methods=["GET"])
 def get_item(item_id):
     item = Item.query.get(item_id)
@@ -193,17 +245,16 @@ def get_item(item_id):
         "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
     })
 
-# 4. 更新物品状态（认领/解决）（需登录）
 @app.route("/api/items/<int:item_id>", methods=["PUT"])
 @jwt_required()
 def update_item(item_id):
-    current_user = get_jwt_identity()
+    user_id_str = get_jwt_identity()
     item = Item.query.get(item_id)
     
     if not item:
         return jsonify({"error": "物品未找到"}), 404
     
-    if item.user_id != current_user['id']:
+    if item.user_id != int(user_id_str):
         return jsonify({"error": "无权限修改此物品"}), 403
     
     data = request.get_json()
@@ -215,17 +266,16 @@ def update_item(item_id):
         "status": item.status
     })
 
-# 5. 删除物品（需登录）
 @app.route("/api/items/<int:item_id>", methods=["DELETE"])
 @jwt_required()
 def delete_item(item_id):
-    current_user = get_jwt_identity()
+    user_id_str = get_jwt_identity()
     item = Item.query.get(item_id)
     
     if not item:
         return jsonify({"error": "物品未找到"}), 404
     
-    if item.user_id != current_user['id']:
+    if item.user_id != int(user_id_str):
         return jsonify({"error": "无权限删除此物品"}), 403
     
     db.session.delete(item)
@@ -237,8 +287,10 @@ def delete_item(item_id):
 @app.route("/api/notifications", methods=["GET"])
 @jwt_required()
 def get_notifications():
-    current_user = get_jwt_identity()
-    notifications = Notification.query.filter_by(user_id=current_user['id']).order_by(Notification.created_at.desc()).all()
+    user_id_str = get_jwt_identity()
+    user_id_int = int(user_id_str)
+    
+    notifications = Notification.query.filter_by(user_id=user_id_int).order_by(Notification.created_at.desc()).all()
     
     result = [{
         "id": n.id,
@@ -249,7 +301,7 @@ def get_notifications():
         "created_at": n.created_at.strftime("%Y-%m-%d %H:%M:%S")
     } for n in notifications]
     
-    unread_count = Notification.query.filter_by(user_id=current_user['id'], read=False).count()
+    unread_count = Notification.query.filter_by(user_id=user_id_int, read=False).count()
     
     return jsonify({"notifications": result, "unread_count": unread_count})
 

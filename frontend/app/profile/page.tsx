@@ -1,15 +1,107 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+
+interface UserInfo {
+  id: number;
+  username: string;
+  email: string;
+  avatar: string;
+  created_at: string;
+}
 
 export default function Profile() {
   const [username, setUsername] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const user = localStorage.getItem('username');
-    if (user) setUsername(user);
+    const storedUsername = localStorage.getItem('username');
+    const storedAvatar = localStorage.getItem('avatar');
+    if (storedUsername) {
+      setUsername(storedUsername);
+      setAvatar(storedAvatar || '');
+    }
+    fetchUserInfo();
   }, []);
+
+  const fetchUserInfo = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/user', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.code === 200) {
+        setUserInfo(data.data);
+        setAvatar(data.data.avatar);
+        localStorage.setItem('avatar', data.data.avatar);
+      }
+    } catch (error) {
+      console.error('获取用户信息失败:', error);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadError('');
+
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (!allowedExtensions.includes(fileExtension || '')) {
+      setUploadError('仅支持jpg、png、webp格式的图片');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError('图片大小不能超过2MB');
+      return;
+    }
+
+    setUploading(true);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/upload/avatar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.code === 200) {
+        setAvatar(data.data.avatar);
+        localStorage.setItem('avatar', data.data.avatar);
+      } else {
+        setUploadError(data.msg || '上传失败');
+      }
+    } catch (error) {
+      setUploadError('网络错误，请稍后重试');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('avatar');
+    window.location.href = '/';
+  };
 
   if (!username) {
     return (
@@ -39,22 +131,55 @@ export default function Profile() {
     <div className="space-y-8">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-8 text-white">
         <div className="flex items-center gap-6">
-          <div className="text-6xl">👤</div>
+          <div className="relative">
+            <img
+              src={avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+              alt="头像"
+              className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAvatarUpload}
+              className="hidden"
+              id="avatar-upload"
+            />
+            <label
+              htmlFor="avatar-upload"
+              className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full flex items-center justify-center cursor-pointer shadow-md hover:bg-gray-100 transition-colors"
+            >
+              {uploading ? (
+                <svg className="w-4 h-4 text-blue-600 animate-spin" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              )}
+            </label>
+          </div>
           <div>
             <h2 className="text-2xl font-bold">{username}</h2>
             <p className="text-blue-200">欢迎回来！</p>
+            {userInfo && (
+              <p className="text-blue-100 text-sm mt-1">{userInfo.email}</p>
+            )}
           </div>
           <button
-            onClick={() => {
-              localStorage.removeItem('token');
-              localStorage.removeItem('username');
-              window.location.href = '/';
-            }}
+            onClick={handleLogout}
             className="ml-auto px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
           >
             退出登录
           </button>
         </div>
+        {uploadError && (
+          <div className="mt-4 bg-red-500/30 text-red-100 px-4 py-2 rounded-lg text-sm">
+            {uploadError}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-4">

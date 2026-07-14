@@ -1,13 +1,13 @@
 # AI辅助开发Prompt日志
 说明：本文档记录项目开发中使用AI解决代码开发相关问题的对话，每条对话配套截图存放于同级 ../screenshots/ 文件夹.
 
-1、项目初始化，搭建前后端目录结构
+## 1、项目初始化，搭建前后端目录结构
 对话时间：2026-07-13 16:25
 对应功能：项目基础框架搭建
 对应文件：根目录 frontend/ 、backend/ 整体目录结构
-# 用户提问：
+### 用户提问：
 我要做失物招领AI实训系统，技术栈Next.js+Flask，现在第一步要做什么？
-# AI回复内容
+### AI回复内容
  完整分步操作
  第一步：本地创建项目根目录
 1. 电脑空白位置新建文件夹，命名 `lost-find-system`
@@ -36,16 +36,16 @@
 1. 左侧源代码管理勾选所有新增文件
 2. 提交描述填写规范内容：`feat: 初始化项目，搭建Next前端+Flask后端基础目录框架`
 3. 点击提交，再推送至GitHub远程仓库
-# 配套截图存放路径
+### 配套截图存放路径
 screenshots/prompt1_搭建框架.png
 
-2、检查前端页面完整性
+## 2、检查前端页面完整性
 对话时间：2026-07-13 21:15
 对应功能：前端页面规划
 对应文件：frontend/app/
-# 用户提问：
+### 用户提问：
 你觉得前端这些tab全了吗
-# AI回复内容
+### AI回复内容
 当前前端已有6个路由页面：
 1. 首页 / - 帖子列表、Tab切换（全部/寻物/招领）
 2. 发布 /post - 发布帖子（需登录）
@@ -54,16 +54,16 @@ screenshots/prompt1_搭建框架.png
 5. AI匹配 /match - 测试匹配功能
 6. 登录/注册 /login /register
 已满足。
-# 配套截图存放路径
+### 配套截图存放路径
 screenshots/prompt2_页面完整性检查.png
 
-3、实现用户认证API（注册/登录）
+## 3、实现用户认证API（注册/登录）
 对话时间：2026-07-13 21:30
 对应功能：用户认证后端
 对应文件：backend/app.py
-# 用户提问：
+### 用户提问：
 帮我实现用户认证API（注册/登录）
-# AI回复内容
+### AI回复内容
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -77,7 +77,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'super-secret-key-change-in-production'
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
-## ========== 数据库模型 ==========
+#### ========== 数据库模型 ==========
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -105,10 +105,10 @@ class Notification(db.Model):
     related_item_id = db.Column(db.Integer)
     read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
-## 创建数据库表
+#### 创建数据库表
 with app.app_context():
     db.create_all()
-## ========== 连通性测试接口 ==========
+#### ========== 连通性测试接口 ==========
 @app.route("/api/test", methods=["GET"])
 def test_api():
     return {
@@ -116,8 +116,8 @@ def test_api():
         "msg": "后端服务运行正常",
         "data": "失物招领系统基础接口连通成功"
     }
-## ========== 用户认证接口 ==========
-### 1. 用户注册
+#### ========== 用户认证接口 ==========
+##### 1. 用户注册
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.get_json()
@@ -135,7 +135,7 @@ def register():
     db.session.add(user)
     db.session.commit()
     return jsonify({"code": 200, "msg": "注册成功", "data": {"username": username}}), 201
-### 2. 用户登录
+##### 2. 用户登录
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -156,7 +156,7 @@ def login():
             "user_id": user.id
         }
     })
-### 3. 获取当前用户信息
+##### 3. 获取当前用户信息
 @app.route("/api/user", methods=["GET"])
 @jwt_required()
 def get_user():
@@ -173,8 +173,8 @@ def get_user():
             "created_at": user.created_at.strftime("%Y-%m-%d %H:%M:%S")
         }
     })
-## ========== 物品接口 ==========
-### 1. 获取所有物品列表
+#### ========== 物品接口 ==========
+##### 1. 获取所有物品列表
 @app.route("/api/items", methods=["GET"])
 def get_items():
     items = Item.query.order_by(Item.created_at.desc()).all()
@@ -189,7 +189,7 @@ def get_items():
         "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
     } for item in items]
     return jsonify(result)
-### 2. 发布新物品（需登录）
+##### 2. 发布新物品（需登录）
 @app.route("/api/items", methods=["POST"])
 @jwt_required()
 def create_item():
@@ -215,7 +215,7 @@ def create_item():
         "status": new_item.status,
         "created_at": new_item.created_at.strftime("%Y-%m-%d %H:%M:%S")
     }), 201
-### 3. 获取单个物品详情
+##### 3. 获取单个物品详情
 @app.route("/api/items/<int:item_id>", methods=["GET"])
 def get_item(item_id):
     item = Item.query.get(item_id)
@@ -231,7 +231,7 @@ def get_item(item_id):
         "status": item.status,
         "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
     })
-### 4. 更新物品状态（认领/解决）（需登录）
+##### 4. 更新物品状态（认领/解决）（需登录）
 @app.route("/api/items/<int:item_id>", methods=["PUT"])
 @jwt_required()
 def update_item(item_id):
@@ -248,7 +248,7 @@ def update_item(item_id):
         "id": item.id,
         "status": item.status
     })
-### 5. 删除物品（需登录）
+##### 5. 删除物品（需登录）
 @app.route("/api/items/<int:item_id>", methods=["DELETE"])
 @jwt_required()
 def delete_item(item_id):
@@ -261,7 +261,7 @@ def delete_item(item_id):
     db.session.delete(item)
     db.session.commit()
     return jsonify({"msg": "删除成功"})
-## ========== 通知接口 ==========
+#### ========== 通知接口 ==========
 @app.route("/api/notifications", methods=["GET"])
 @jwt_required()
 def get_notifications():
@@ -277,7 +277,7 @@ def get_notifications():
     } for n in notifications]
     unread_count = Notification.query.filter_by(user_id=current_user['id'], read=False).count()
     return jsonify({"notifications": result, "unread_count": unread_count})
-## ========== AI匹配接口 ==========
+#### ========== AI匹配接口 ==========
 @app.route("/api/match", methods=["POST"])
 def ai_match():
     data = request.get_json()
@@ -309,5 +309,21 @@ def calculate_similarity(text1, text2):
     return len(intersection) / len(union)
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)
-# 配套截图存放路径
+### 配套截图存放路径
 screenshots/prompt3_用户认证API.png
+
+## 4、实现头像管理功能
+对话时间：2026-07-14 01:00
+对应功能：头像上传与管理
+对应文件：backend/app.py, frontend/app/profile/page.tsx, frontend/app/login/page.tsx
+### 用户提问：
+基于现有注册登录体系，在"我的"页面扩展头像管理能力：用户首次注册默认分配系统头像，后续可通过本地图片上传自定义头像，需满足格式校验（jpg/png/webp）、大小限制（≤2MB）、上传加载反馈，并确保头像 URL 随用户信息持久化存储，支持退出重登后依然正确展示，前后端协同实现完整闭环。
+### AI回复内容
+后端：User模型添加avatar字段，修改注册/登录接口支持头像
+后端：添加头像上传API（格式校验、大小限制）
+后端：创建头像存储目录，配置静态文件服务
+前端：Profile页面实现头像展示和上传功能
+前端：实现格式校验、大小限制、上传加载反馈
+测试：注册新用户、上传头像、退出重登验证
+### 配套截图存放路径
+screenshots/prompt4_头像上传.png

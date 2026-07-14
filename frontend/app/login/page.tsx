@@ -25,12 +25,13 @@ export default function LoginPage() {
 
       const data = await response.json();
 
-      if (response.ok && data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('username', data.username);
+      if (response.ok && data.code === 200 && data.data?.token) {
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('username', data.data.username);
+        localStorage.setItem('avatar', data.data.avatar || '');
         router.push('/');
       } else {
-        setError(data.message || '登录失败');
+        setError(data.msg || '登录失败');
       }
     } catch (err) {
       setError('网络错误，请稍后重试');
