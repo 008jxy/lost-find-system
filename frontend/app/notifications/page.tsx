@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { validateToken, clearAuthStorage } from '../utils/auth';
 
 interface Notification {
@@ -36,8 +37,13 @@ export default function NotificationsPage() {
   }, [router]);
 
   const fetchNotifications = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
     try {
-      const response = await fetch('http://localhost:5000/api/notifications');
+      const response = await fetch('http://localhost:5000/api/notifications', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await response.json();
       setNotifications(data.notifications || []);
     } catch (err) {
@@ -48,9 +54,13 @@ export default function NotificationsPage() {
   };
 
   const markAsRead = async (id: number) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
     try {
       await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
         method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications(notifications.map(n => 
         n.id === id ? { ...n, read: true } : n
@@ -61,9 +71,13 @@ export default function NotificationsPage() {
   };
 
   const deleteNotification = async (id: number) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
     try {
       await fetch(`http://localhost:5000/api/notifications/${id}`, {
         method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications(notifications.filter(n => n.id !== id));
     } catch (err) {
@@ -107,11 +121,21 @@ export default function NotificationsPage() {
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <h3 className={`font-semibold mb-2 ${
-                    !notification.read ? 'text-gray-900' : 'text-gray-600'
-                  }`}>
-                    {notification.title}
-                  </h3>
+                  {notification.related_item_id ? (
+                    <Link href={`/items/${notification.related_item_id}`}>
+                      <h3 className={`font-semibold mb-2 ${
+                        !notification.read ? 'text-gray-900' : 'text-gray-600'
+                      } hover:text-purple-600 cursor-pointer`}>
+                        {notification.title}
+                      </h3>
+                    </Link>
+                  ) : (
+                    <h3 className={`font-semibold mb-2 ${
+                      !notification.read ? 'text-gray-900' : 'text-gray-600'
+                    }`}>
+                      {notification.title}
+                    </h3>
+                  )}
                   <p className="text-gray-600 mb-2">{notification.content}</p>
                   <p className="text-sm text-gray-400">
                     {new Date(notification.created_at).toLocaleString()}

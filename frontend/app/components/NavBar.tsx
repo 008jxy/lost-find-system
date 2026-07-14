@@ -16,9 +16,9 @@ export default function NavBar() {
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <Link href="/" className="text-2xl font-bold text-purple-600">
+      <div className="px-6 lg:px-8">
+        <div className="flex justify-start items-center h-16 gap-8">
+          <Link href="/" className="text-3xl font-bold text-purple-600">
             📦 失物招领
           </Link>
           <div className="flex space-x-6">
@@ -26,7 +26,7 @@ export default function NavBar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`transition-colors ${
+                className={`text-lg transition-colors ${
                   pathname === item.href
                     ? 'text-purple-600 font-medium'
                     : 'text-gray-600 hover:text-purple-600'

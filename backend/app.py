@@ -321,6 +321,8 @@ def create_item():
     db.session.add(new_item)
     db.session.commit()
 
+    trigger_match_and_notify(new_item)
+
     return jsonify({
         "code": 200,
         "msg": "发布成功",
@@ -453,27 +455,69 @@ def get_notifications():
     
     return jsonify({"notifications": result, "unread_count": unread_count})
 
+@app.route("/api/notifications/<int:notification_id>/read", methods=["PUT"])
+@jwt_required()
+def mark_notification_read(notification_id):
+    user_id_str = get_jwt_identity()
+    user_id_int = int(user_id_str)
+    
+    notification = Notification.query.get(notification_id)
+    if not notification:
+        return jsonify({"code": 404, "msg": "通知不存在"}), 404
+    
+    if notification.user_id != user_id_int:
+        return jsonify({"code": 403, "msg": "无权限操作此通知"}), 403
+    
+    notification.read = True
+    db.session.commit()
+    
+    return jsonify({"code": 200, "msg": "已标记为已读"})
+
+@app.route("/api/notifications/<int:notification_id>", methods=["DELETE"])
+@jwt_required()
+def delete_notification(notification_id):
+    user_id_str = get_jwt_identity()
+    user_id_int = int(user_id_str)
+    
+    notification = Notification.query.get(notification_id)
+    if not notification:
+        return jsonify({"code": 404, "msg": "通知不存在"}), 404
+    
+    if notification.user_id != user_id_int:
+        return jsonify({"code": 403, "msg": "无权限删除此通知"}), 403
+    
+    db.session.delete(notification)
+    db.session.commit()
+    
+    return jsonify({"code": 200, "msg": "删除成功"})
+
 # ========== AI匹配接口 ==========
 @app.route("/api/match", methods=["POST"])
 def ai_match():
     data = request.get_json()
     description = data.get('description', '')
+    title = data.get('title', '')
     category = data.get('category', 'lost')
     
     if not description:
         return jsonify({"code": 400, "msg": "请输入描述内容"}), 400
     
+    full_text = f"{title} {description}"
     target_category = 'found' if category == 'lost' else 'lost'
     items = Item.query.filter_by(category=target_category, status='pending').all()
     
     matches = []
     for item in items:
-        similarity = calculate_similarity(description, item.description)
+        item_full_text = f"{item.title} {item.description}"
+        similarity = calculate_similarity(full_text, item_full_text)
         if similarity > 0.3:
             matches.append({
                 "item_id": item.id,
                 "title": item.title,
                 "description": item.description,
+                "contact": item.contact,
+                "category": item.category,
+                "status": item.status,
                 "similarity": round(similarity * 100, 2)
             })
     
@@ -481,14 +525,114 @@ def ai_match():
     
     return jsonify({"code": 200, "matches": matches[:5]})
 
+@app.route("/api/match/all", methods=["GET"])
+def ai_match_all():
+    lost_items = Item.query.filter_by(category='lost', status='pending').all()
+    found_items = Item.query.filter_by(category='found', status='pending').all()
+    
+    matches = []
+    for lost in lost_items:
+        for found in found_items:
+            lost_text = f"{lost.title} {lost.description}"
+            found_text = f"{found.title} {found.description}"
+            similarity = calculate_similarity(lost_text, found_text)
+            if similarity > 0.4:
+                matches.append({
+                    "lost_item": {
+                        "id": lost.id,
+                        "title": lost.title,
+                        "description": lost.description,
+                        "contact": lost.contact,
+                        "user_id": lost.user_id
+                    },
+                    "found_item": {
+                        "id": found.id,
+                        "title": found.title,
+                        "description": found.description,
+                        "contact": found.contact,
+                        "user_id": found.user_id
+                    },
+                    "similarity": round(similarity * 100, 2)
+                })
+    
+    matches.sort(key=lambda x: x['similarity'], reverse=True)
+    
+    return jsonify({"matches": matches[:10]})
+
+def trigger_match_and_notify(new_item):
+    target_category = 'found' if new_item.category == 'lost' else 'lost'
+    target_items = Item.query.filter_by(category=target_category, status='pending').all()
+    
+    new_text = f"{new_item.title} {new_item.description}"
+    
+    for item in target_items:
+        if item.id == new_item.id:
+            continue
+        
+        item_text = f"{item.title} {item.description}"
+        similarity = calculate_similarity(new_text, item_text)
+        
+        if similarity > 0.4:
+            if new_item.category == 'lost':
+                notification_title = '🔍 发现相似招领帖'
+                notification_content = f'您发布的"{new_item.title}"与"{item.title}"相似度达{round(similarity*100, 1)}%，可能是您寻找的物品！'
+                notify_user(new_item.user_id, notification_title, notification_content, item.id)
+                
+                notification_title = '🔔 发现相似寻物帖'
+                notification_content = f'您发布的"{item.title}"与"{new_item.title}"相似度达{round(similarity*100, 1)}%，可能是失主发布的！'
+                notify_user(item.user_id, notification_title, notification_content, new_item.id)
+            else:
+                notification_title = '🔍 发现相似寻物帖'
+                notification_content = f'您发布的"{new_item.title}"与"{item.title}"相似度达{round(similarity*100, 1)}%，可能是失主发布的！'
+                notify_user(new_item.user_id, notification_title, notification_content, item.id)
+                
+                notification_title = '🔔 发现相似招领帖'
+                notification_content = f'您发布的"{item.title}"与"{new_item.title}"相似度达{round(similarity*100, 1)}%，可能是您寻找的物品！'
+                notify_user(item.user_id, notification_title, notification_content, new_item.id)
+
+def notify_user(user_id, title, content, related_item_id=None):
+    notification = Notification(
+        user_id=user_id,
+        title=title,
+        content=content,
+        related_item_id=related_item_id,
+        read=False
+    )
+    db.session.add(notification)
+    db.session.commit()
+
+def tokenize(text):
+    import re
+    text = text.lower()
+    text = re.sub(r'[^\w\s]', '', text)
+    words = text.split()
+    return words
+
 def calculate_similarity(text1, text2):
-    words1 = set(text1.lower())
-    words2 = set(text2.lower())
+    words1 = tokenize(text1)
+    words2 = tokenize(text2)
+    
     if not words1 or not words2:
         return 0
-    intersection = words1 & words2
-    union = words1 | words2
-    return len(intersection) / len(union)
+    
+    set1 = set(words1)
+    set2 = set(words2)
+    
+    if not set1 or not set2:
+        return 0
+    
+    intersection = set1 & set2
+    union = set1 | set2
+    jaccard = len(intersection) / len(union)
+    
+    common_words = list(intersection)
+    if common_words:
+        for word in common_words:
+            count1 = words1.count(word)
+            count2 = words2.count(word)
+            jaccard += min(count1, count2) * 0.1
+    
+    return min(jaccard, 1.0)
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)

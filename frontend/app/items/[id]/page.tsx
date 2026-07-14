@@ -275,12 +275,14 @@ export default function ItemDetail() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
-              <button
-                type="submit"
-                className="w-full py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
-              >
-                保存修改
-              </button>
+              <div className="flex justify-center">
+                <button
+                  type="submit"
+                  className="px-8 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                >
+                  保存修改
+                </button>
+              </div>
             </form>
           ) : (
             <>
@@ -318,18 +320,18 @@ export default function ItemDetail() {
               )}
 
               {isOwner && item.status === 'pending' && (
-                <div className="flex gap-4 pt-6 border-t">
+                <div className="flex justify-center gap-4 pt-6 border-t">
                   {item.category === 'lost' ? (
                     <button
                       onClick={() => handleStatusChange('resolved')}
-                      className="flex-1 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
+                      className="px-8 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
                     >
                       标记为已解决
                     </button>
                   ) : (
                     <button
                       onClick={() => handleStatusChange('claimed')}
-                      className="flex-1 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                      className="px-8 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
                     >
                       标记为已认领
                     </button>
