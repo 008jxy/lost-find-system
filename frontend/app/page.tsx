@@ -39,11 +39,12 @@ export default function Home() {
   const [filter, setFilter] = useState<'all' | 'lost' | 'found'>('all');
   const [campusFilter, setCampusFilter] = useState<'all' | 'kangmei' | 'meilin'>('all');
   const [itemTypeFilter, setItemTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [searchKeyword, setSearchKeyword] = useState('');
 
   useEffect(() => {
     fetchItems();
-  }, [filter, campusFilter, itemTypeFilter]);
+  }, [filter, campusFilter, itemTypeFilter, statusFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -94,11 +95,18 @@ export default function Home() {
 
   const filteredItems = searchKeyword 
     ? items 
-    : items.filter(item => filter === 'all' || item.category === filter);
+    : items.filter(item => {
+        const categoryMatch = filter === 'all' || item.category === filter;
+        const statusMatch = statusFilter === 'all' || 
+                          (statusFilter === 'pending' && item.status === 'pending') ||
+                          (statusFilter === 'completed' && item.status !== 'pending');
+        return categoryMatch && statusMatch;
+      });
 
   const lostCount = items.filter(i => i.category === 'lost').length;
   const foundCount = items.filter(i => i.category === 'found').length;
   const pendingCount = items.filter(i => i.status === 'pending').length;
+  const completedCount = items.filter(i => i.status !== 'pending').length;
 
   if (loading) {
     return <div className="text-center py-8">加载中...</div>;
@@ -110,22 +118,41 @@ export default function Home() {
         <h1 className="text-3xl font-bold mb-2 text-gray-800">📦 失物招领系统</h1>
         <p className="text-gray-600">AI智能匹配，让失物早日回家</p>
         <div className="flex gap-8 mt-6">
-          <div>
+          <button
+            onClick={() => { setFilter('all'); setStatusFilter('all'); }}
+            className="flex flex-col items-start p-4 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
+          >
             <div className="text-3xl font-bold text-gray-800">{items.length}</div>
             <div className="text-gray-500 text-sm">总帖子数</div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold text-gray-800">{lostCount}</div>
+          </button>
+          <button
+            onClick={() => { setFilter('lost'); setStatusFilter('all'); }}
+            className="flex flex-col items-start p-4 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
+          >
+            <div className="text-3xl font-bold text-red-600">{lostCount}</div>
             <div className="text-gray-500 text-sm">寻物启事</div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold text-gray-800">{foundCount}</div>
+          </button>
+          <button
+            onClick={() => { setFilter('found'); setStatusFilter('all'); }}
+            className="flex flex-col items-start p-4 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
+          >
+            <div className="text-3xl font-bold text-green-600">{foundCount}</div>
             <div className="text-gray-500 text-sm">失物招领</div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold text-gray-800">{pendingCount}</div>
+          </button>
+          <button
+            onClick={() => { setStatusFilter('pending'); }}
+            className="flex flex-col items-start p-4 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
+          >
+            <div className="text-3xl font-bold text-yellow-600">{pendingCount}</div>
             <div className="text-gray-500 text-sm">待认领</div>
-          </div>
+          </button>
+          <button
+            onClick={() => { setStatusFilter('completed'); }}
+            className="flex flex-col items-start p-4 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
+          >
+            <div className="text-3xl font-bold text-gray-600">{completedCount}</div>
+            <div className="text-gray-500 text-sm">已完成</div>
+          </button>
         </div>
       </div>
 
@@ -142,42 +169,58 @@ export default function Home() {
             className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-              filter === 'all' ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            全部 ({searchKeyword ? filteredItems.length : items.length})
-          </button>
-          <button
-            onClick={() => setFilter('lost')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-              filter === 'lost' ? 'bg-red-500 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            🔴 寻物 ({lostCount})
-          </button>
-          <button
-            onClick={() => setFilter('found')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-              filter === 'found' ? 'bg-green-500 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            🟢 招领 ({foundCount})
-          </button>
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex bg-gray-100 rounded-xl p-1">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                filter === 'all' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              全部
+            </button>
+            <button
+              onClick={() => setFilter('lost')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                filter === 'lost' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🔴 寻物
+            </button>
+            <button
+              onClick={() => setFilter('found')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                filter === 'found' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🟢 招领
+            </button>
+          </div>
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'completed')}
+              className="appearance-none px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors pr-8 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+            >
+              <option value="all">全部状态</option>
+              <option value="pending">⏳ 待认领</option>
+              <option value="completed">✅ 已完成</option>
+            </select>
+            <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
           <div className="relative">
             <select
               value={campusFilter}
               onChange={(e) => setCampusFilter(e.target.value as 'all' | 'kangmei' | 'meilin')}
-              className="appearance-none px-4 py-3 rounded-xl font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors pr-8 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              className="appearance-none px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors pr-8 focus:ring-2 focus:ring-purple-500 focus:outline-none"
             >
               <option value="all">所有校区</option>
-              <option value="kangmei">🏫 康美校区</option>
-              <option value="meilin">🏫 美林校区</option>
+              <option value="kangmei">🏫 康美</option>
+              <option value="meilin">🏫 美林</option>
             </select>
-            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
@@ -185,7 +228,7 @@ export default function Home() {
             <select
               value={itemTypeFilter}
               onChange={(e) => setItemTypeFilter(e.target.value)}
-              className="appearance-none px-4 py-3 rounded-xl font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors pr-8 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              className="appearance-none px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors pr-8 focus:ring-2 focus:ring-purple-500 focus:outline-none"
             >
               <option value="">所有分类</option>
               <option value="id_card">证件卡片</option>
@@ -195,7 +238,7 @@ export default function Home() {
               <option value="sports">体育器材</option>
               <option value="other">其他</option>
             </select>
-            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
