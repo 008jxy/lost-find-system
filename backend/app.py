@@ -72,6 +72,14 @@ class Notification(db.Model):
     read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('item.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
 # 创建数据库表
 with app.app_context():
     db.create_all()
@@ -620,6 +628,122 @@ def delete_notification(notification_id):
     db.session.commit()
     
     return jsonify({"code": 200, "msg": "删除成功"})
+
+# ========== 站内信接口 ==========
+@app.route("/api/messages/<int:item_id>", methods=["GET"])
+@jwt_required()
+def get_messages(item_id):
+    user_id_str = get_jwt_identity()
+    user_id_int = int(user_id_str)
+    
+    messages = Message.query.filter_by(item_id=item_id).filter(
+        (Message.sender_id == user_id_int) | (Message.receiver_id == user_id_int)
+    ).order_by(Message.created_at.asc()).all()
+    
+    result = []
+    for msg in messages:
+        sender = User.query.get(msg.sender_id)
+        result.append({
+            "id": msg.id,
+            "item_id": msg.item_id,
+            "sender_id": msg.sender_id,
+            "receiver_id": msg.receiver_id,
+            "content": msg.content,
+            "created_at": msg.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "sender": {
+                "id": sender.id,
+                "username": sender.username,
+                "avatar": sender.avatar
+            } if sender else None
+        })
+    
+    return jsonify({"code": 200, "messages": result})
+
+@app.route("/api/messages/<int:item_id>", methods=["POST"])
+@jwt_required()
+def send_message(item_id):
+    user_id_str = get_jwt_identity()
+    user_id_int = int(user_id_str)
+    
+    item = Item.query.get(item_id)
+    if not item:
+        return jsonify({"code": 404, "msg": "帖子不存在"}), 404
+    
+    if item.user_id == user_id_int:
+        return jsonify({"code": 400, "msg": "不能给自己发消息"}), 400
+    
+    data = request.get_json()
+    content = data.get('content', '').strip()
+    if not content:
+        return jsonify({"code": 400, "msg": "消息内容不能为空"}), 400
+    
+    message = Message(
+        item_id=item_id,
+        sender_id=user_id_int,
+        receiver_id=item.user_id,
+        content=content
+    )
+    db.session.add(message)
+    db.session.commit()
+    
+    sender = User.query.get(user_id_int)
+    
+    return jsonify({
+        "code": 200,
+        "msg": "发送成功",
+        "data": {
+            "id": message.id,
+            "item_id": message.item_id,
+            "sender_id": message.sender_id,
+            "receiver_id": message.receiver_id,
+            "content": message.content,
+            "created_at": message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "sender": {
+                "id": sender.id,
+                "username": sender.username,
+                "avatar": sender.avatar
+            }
+        }
+    })
+
+@app.route("/api/conversations", methods=["GET"])
+@jwt_required()
+def get_conversations():
+    user_id_str = get_jwt_identity()
+    user_id_int = int(user_id_str)
+    
+    all_messages = Message.query.filter(
+        (Message.sender_id == user_id_int) | (Message.receiver_id == user_id_int)
+    ).order_by(Message.created_at.desc()).all()
+    
+    seen = set()
+    conversations = []
+    
+    for msg in all_messages:
+        other_user_id = msg.receiver_id if msg.sender_id == user_id_int else msg.sender_id
+        
+        key = (msg.item_id, other_user_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        
+        other_user = User.query.get(other_user_id)
+        item = Item.query.get(msg.item_id)
+        
+        conversations.append({
+            "item_id": msg.item_id,
+            "item_title": item.title if item else "已删除帖子",
+            "item_category": item.category if item else "",
+            "other_user": {
+                "id": other_user.id,
+                "username": other_user.username,
+                "avatar": other_user.avatar
+            } if other_user else None,
+            "last_message": msg.content,
+            "last_time": msg.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        })
+    
+    return jsonify({"code": 200, "conversations": conversations})
 
 # ========== AI匹配接口 ==========
 @app.route("/api/match", methods=["POST"])

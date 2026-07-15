@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -25,6 +25,16 @@ interface Item {
   status: 'pending' | 'claimed' | 'resolved';
   created_at: string;
   user?: User;
+}
+
+interface Message {
+  id: number;
+  item_id: number;
+  sender_id: number;
+  receiver_id: number;
+  content: string;
+  created_at: string;
+  sender?: User;
 }
 
 const ITEM_TYPES: Record<string, string> = {
@@ -52,6 +62,11 @@ export default function ItemDetail() {
     found_time: '',
     found_location: '',
   });
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const userId = localStorage.getItem('user_id');
@@ -158,6 +173,79 @@ export default function ItemDetail() {
     } catch (err) {
       setError('网络错误，请稍后重试');
     }
+  };
+
+  const fetchMessages = async () => {
+    if (!item) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/messages/${item.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.code === 200) {
+        setMessages(data.messages || []);
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    } catch (err) {
+      console.error('获取消息失败:', err);
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !item) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    setSendingMessage(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/messages/${item.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: newMessage.trim() }),
+      });
+      const data = await response.json();
+      if (data.code === 200) {
+        setNewMessage('');
+        fetchMessages();
+      }
+    } catch (err) {
+      console.error('发送消息失败:', err);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.floor((today.getTime() - msgDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      return '昨天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    } else {
+      return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) + ' ' + 
+             date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    }
+  };
+
+  const shouldShowTimestamp = (current: Message, prev: Message | null) => {
+    if (!prev) return true;
+    const diff = new Date(current.created_at).getTime() - new Date(prev.created_at).getTime();
+    return diff >= 3 * 60 * 1000;
   };
 
   if (loading) {
@@ -372,6 +460,23 @@ export default function ItemDetail() {
                   )}
                 </div>
               )}
+
+              {!isOwner && currentUserId && (
+                <div className="flex justify-center pt-6 border-t">
+                  <button
+                    onClick={() => {
+                      setShowChat(true);
+                      fetchMessages();
+                    }}
+                    className="px-6 py-2 bg-purple-100 text-purple-700 rounded-lg font-medium hover:bg-purple-200 transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    联系发布者
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -406,6 +511,99 @@ export default function ItemDetail() {
           >
             ×
           </button>
+        </div>
+      )}
+
+      {showChat && item && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowChat(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Chat Header */}
+            <div className="flex justify-between items-center p-4 border-b">
+              <div className="flex items-center gap-2">
+                <img
+                  src={item.user?.avatar || '/avatar-male.jpg'}
+                  alt={item.user?.username || '用户'}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+                <div>
+                  <p className="font-medium text-gray-900">{item.user?.username || '匿名用户'}</p>
+                  <p className="text-xs text-gray-400">关于：{item.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowChat(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px]">
+              {messages.length === 0 ? (
+                <div className="text-center text-gray-400 py-8">
+                  还没有消息，发送第一条消息吧！
+                </div>
+              ) : (
+                messages.map((msg, idx) => {
+                  const isMe = msg.sender_id === currentUserId;
+                  const showTime = shouldShowTimestamp(msg, idx > 0 ? messages[idx - 1] : null);
+                  return (
+                    <div key={msg.id}>
+                      {showTime && (
+                        <div className="text-center text-xs text-gray-400 my-2">
+                          {formatTime(msg.created_at)}
+                        </div>
+                      )}
+                      <div className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
+                        <img
+                          src={msg.sender?.avatar || '/avatar-male.jpg'}
+                          alt={msg.sender?.username || '用户'}
+                          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        />
+                        <div className={`max-w-[70%] ${isMe ? 'items-end' : ''}`}>
+                          <p className={`text-xs text-gray-400 mb-1 ${isMe ? 'text-right' : ''}`}>
+                            {isMe ? '我' : msg.sender?.username}
+                          </p>
+                          <div className={`px-3 py-2 rounded-lg ${
+                            isMe ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            <p className="text-sm break-words">{msg.content}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <form onSubmit={handleSendMessage} className="p-3 border-t flex gap-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="输入消息..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!newMessage.trim() || sendingMessage}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                发送
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

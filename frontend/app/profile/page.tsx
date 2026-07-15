@@ -351,7 +351,7 @@ export default function Profile() {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-800">我的操作</h3>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-4">
           <Link
             href="/post"
             className="flex items-center gap-4 p-4 rounded-lg transition-colors"
@@ -371,6 +371,16 @@ export default function Profile() {
             <div>
               <div className="font-medium text-gray-800">我的通知</div>
               <div className="text-sm text-gray-500">查看AI匹配推送</div>
+            </div>
+          </Link>
+          <Link
+            href="/messages"
+            className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <div className="text-4xl">💬</div>
+            <div>
+              <div className="font-medium text-gray-800">我的消息</div>
+              <div className="text-sm text-gray-500">查看站内信对话</div>
             </div>
           </Link>
         </div>
