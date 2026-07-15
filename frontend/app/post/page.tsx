@@ -7,6 +7,7 @@ import { validateToken, clearAuthStorage } from '../utils/auth';
 export default function PostPage() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<'lost' | 'found'>('lost');
+  const [campus, setCampus] = useState<'kangmei' | 'meilin'>('kangmei');
   const [description, setDescription] = useState('');
   const [contact, setContact] = useState('');
   const [foundTime, setFoundTime] = useState('');
@@ -76,6 +77,7 @@ export default function PostPage() {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('category', category);
+      formData.append('campus', campus);
       formData.append('description', description);
       formData.append('contact', contact);
       formData.append('found_time', foundTime);
@@ -154,6 +156,36 @@ export default function PostPage() {
                   className="w-4 h-4 text-purple-600"
                 />
                 <span className="ml-2 text-gray-700">失物招领</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-medium mb-2">
+              校区 <span className="text-red-500">*</span>
+            </label>
+            <div className="flex space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="campus"
+                  value="kangmei"
+                  checked={campus === 'kangmei'}
+                  onChange={(e) => setCampus('kangmei')}
+                  className="w-4 h-4 text-purple-600"
+                />
+                <span className="ml-2 text-gray-700">康美校区</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="campus"
+                  value="meilin"
+                  checked={campus === 'meilin'}
+                  onChange={(e) => setCampus('meilin')}
+                  className="w-4 h-4 text-purple-600"
+                />
+                <span className="ml-2 text-gray-700">美林校区</span>
               </label>
             </div>
           </div>

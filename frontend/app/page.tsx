@@ -14,6 +14,7 @@ interface Item {
   user_id: number;
   title: string;
   category: 'lost' | 'found';
+  campus: 'kangmei' | 'meilin';
   description: string;
   contact: string;
   image: string;
@@ -26,11 +27,12 @@ export default function Home() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'lost' | 'found'>('all');
+  const [campusFilter, setCampusFilter] = useState<'all' | 'kangmei' | 'meilin'>('all');
   const [searchKeyword, setSearchKeyword] = useState('');
 
   useEffect(() => {
     fetchItems();
-  }, [filter]);
+  }, [filter, campusFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -45,6 +47,11 @@ export default function Home() {
       let url = 'http://localhost:5000/api/items';
       if (searchKeyword) {
         url = `http://localhost:5000/api/items/search?keyword=${encodeURIComponent(searchKeyword)}&category=${filter}`;
+        if (campusFilter !== 'all') {
+          url += `&campus=${campusFilter}`;
+        }
+      } else if (campusFilter !== 'all') {
+        url += `?campus=${campusFilter}`;
       }
       
       const response = await fetch(url);
@@ -112,7 +119,7 @@ export default function Home() {
             className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <button
             onClick={() => setFilter('all')}
             className={`px-6 py-3 rounded-xl font-medium transition-all ${
@@ -137,6 +144,20 @@ export default function Home() {
           >
             🟢 招领 ({foundCount})
           </button>
+          <div className="relative">
+            <select
+              value={campusFilter}
+              onChange={(e) => setCampusFilter(e.target.value as 'all' | 'kangmei' | 'meilin')}
+              className="appearance-none px-4 py-3 rounded-xl font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors pr-8 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+            >
+              <option value="all">所有校区</option>
+              <option value="kangmei">🏫 康美校区</option>
+              <option value="meilin">🏫 美林校区</option>
+            </select>
+            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
       </div>
 
@@ -175,7 +196,7 @@ export default function Home() {
                   </div>
                 )}
                 <div className="flex-1 p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
                     <h2 className="text-lg font-semibold text-gray-900">{item.title}</h2>
                     <span className={`text-sm px-2 py-1 rounded ${
                       item.category === 'lost' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
@@ -189,6 +210,9 @@ export default function Home() {
                     }`}>
                       {item.status === 'pending' ? '待认领' :
                        item.status === 'claimed' ? '已认领' : '已解决'}
+                    </span>
+                    <span className="text-sm px-2 py-1 rounded bg-blue-50 text-blue-600">
+                      {item.campus === 'kangmei' ? '康美校区' : '美林校区'}
                     </span>
                   </div>
                   <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>

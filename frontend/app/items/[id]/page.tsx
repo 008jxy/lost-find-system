@@ -15,6 +15,7 @@ interface Item {
   user_id: number;
   title: string;
   category: 'lost' | 'found';
+  campus: 'kangmei' | 'meilin';
   description: string;
   contact: string;
   found_time: string;
@@ -195,7 +196,7 @@ export default function ItemDetail() {
         <div className="p-8">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                 <h1 className="text-2xl font-bold text-gray-900">{item.title}</h1>
                 <span className={`text-sm px-2 py-1 rounded ${
                   item.category === 'lost' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
@@ -209,6 +210,9 @@ export default function ItemDetail() {
                 }`}>
                   {item.status === 'pending' ? '待认领' :
                    item.status === 'claimed' ? '已认领' : '已解决'}
+                </span>
+                <span className="text-sm px-2 py-1 rounded bg-blue-50 text-blue-600">
+                  {item.campus === 'kangmei' ? '康美校区' : '美林校区'}
                 </span>
               </div>
               <div className="flex items-center gap-4">

@@ -430,3 +430,22 @@ screenshots/prompt9_搜索功能.png
 5. 全站（首页、详情页、个人页）统一使用同一默认头像兜底
 ### 配套截图存放路径
 screenshots/prompt10_默认头像.png
+
+## 11、添加校区维度功能
+    -对话时间：2026-07-15  17:35
+    -对应功能：校区选择、校区筛选、校区展示  
+    -对应文件：backend/app.py, frontend/app/post/page.tsx, frontend/app/page.tsx, frontend/app/items/[id]/page.tsx  
+### 用户提问：
+学校有康美和美林两个校区，物品一般在本校区内流转，需要增加校区维度：发布时选择校区（康美/美林，必填），首页列表按校区筛选（全部/康美/美林），详情页展示校区。
+### AI回复内容
+实现校区维度功能：
+1. 后端Item模型添加campus字段，默认值kangmei
+2. 发布接口接收campus参数，必填，支持kangmei/meilin
+3. 获取列表接口支持campus筛选参数
+4. 搜索接口支持campus筛选参数
+5. 前端发布页添加校区选择（康美/美林），标记为必填
+6. 前端首页添加校区筛选标签（所有校区/康美/美林）
+7. 帖子卡片和详情页显示校区标签
+8. 数据库添加campus字段
+### 配套截图存放路径
+screenshots/prompt11_校区功能.png

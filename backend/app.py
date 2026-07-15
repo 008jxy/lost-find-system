@@ -48,6 +48,7 @@ class Item(db.Model):
     contact = db.Column(db.String(100), nullable=False)
     found_time = db.Column(db.String(50), default='')
     found_location = db.Column(db.String(200), default='')
+    campus = db.Column(db.String(20), default='kangmei')
     image = db.Column(db.String(255), default='')
     status = db.Column(db.String(20), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -230,6 +231,7 @@ def get_user_posts():
         "category": item.category,
         "description": item.description,
         "contact": item.contact,
+        "campus": item.campus,
         "image": item.image,
         "status": item.status,
         "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -287,7 +289,13 @@ def serve_item_image(filename):
 # ========== 物品接口 ==========
 @app.route("/api/items", methods=["GET"])
 def get_items():
-    items = Item.query.order_by(Item.created_at.desc()).all()
+    campus = request.args.get('campus', '')
+    
+    query = Item.query
+    if campus and campus in ['kangmei', 'meilin']:
+        query = query.filter_by(campus=campus)
+    
+    items = query.order_by(Item.created_at.desc()).all()
     result = []
     for item in items:
         user = User.query.get(item.user_id)
@@ -300,6 +308,7 @@ def get_items():
             "contact": item.contact,
             "found_time": item.found_time,
             "found_location": item.found_location,
+            "campus": item.campus,
             "image": item.image,
             "status": item.status,
             "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -320,11 +329,15 @@ def create_item():
     category = request.form.get('category')
     description = request.form.get('description')
     contact = request.form.get('contact')
+    campus = request.form.get('campus', 'kangmei')
     found_time = request.form.get('found_time', '')
     found_location = request.form.get('found_location', '')
     
-    if not title or not category or not description or not contact:
-        return jsonify({"code": 400, "msg": "标题、类型、描述、联系方式不能为空"}), 400
+    if not title or not category or not description or not contact or not campus:
+        return jsonify({"code": 400, "msg": "标题、类型、描述、联系方式、校区不能为空"}), 400
+    
+    if campus not in ['kangmei', 'meilin']:
+        campus = 'kangmei'
     
     image_url = ''
     if 'image' in request.files:
@@ -345,6 +358,7 @@ def create_item():
         contact=contact,
         found_time=found_time,
         found_location=found_location,
+        campus=campus,
         image=image_url,
         status='pending'
     )
@@ -390,6 +404,7 @@ def get_item(item_id):
             "contact": item.contact,
             "found_time": item.found_time,
             "found_location": item.found_location,
+            "campus": item.campus,
             "image": item.image,
             "status": item.status,
             "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -425,6 +440,8 @@ def update_item(item_id):
         item.found_time = data['found_time']
     if 'found_location' in data:
         item.found_location = data['found_location']
+    if 'campus' in data:
+        item.campus = data['campus']
     
     if 'status' in data:
         new_status = data['status']
@@ -449,6 +466,7 @@ def update_item(item_id):
             "contact": item.contact,
             "found_time": item.found_time,
             "found_location": item.found_location,
+            "campus": item.campus,
             "status": item.status,
             "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S")
         }
@@ -475,6 +493,7 @@ def delete_item(item_id):
 def search_items():
     keyword = request.args.get('keyword', '')
     category = request.args.get('category', 'all')
+    campus = request.args.get('campus', '')
     
     query = Item.query
     
@@ -486,6 +505,9 @@ def search_items():
     
     if category != 'all':
         query = query.filter_by(category=category)
+    
+    if campus and campus in ['kangmei', 'meilin']:
+        query = query.filter_by(campus=campus)
     
     items = query.all()
     
@@ -501,6 +523,7 @@ def search_items():
             "contact": item.contact,
             "found_time": item.found_time,
             "found_location": item.found_location,
+            "campus": item.campus,
             "image": item.image,
             "status": item.status,
             "created_at": item.created_at.strftime("%Y-%m-%d %H:%M:%S"),
