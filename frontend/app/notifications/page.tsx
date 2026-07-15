@@ -36,6 +36,15 @@ export default function NotificationsPage() {
     checkAuth();
   }, [router]);
 
+  const sortNotifications = (notifs: Notification[]): Notification[] => {
+    return [...notifs].sort((a, b) => {
+      if (a.read !== b.read) {
+        return a.read ? 1 : -1;
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  };
+
   const fetchNotifications = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -45,7 +54,7 @@ export default function NotificationsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-      setNotifications(data.notifications || []);
+      setNotifications(sortNotifications(data.notifications || []));
     } catch (err) {
       console.error('获取通知失败:', err);
     } finally {
@@ -62,9 +71,10 @@ export default function NotificationsPage() {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
-      setNotifications(notifications.map(n => 
+      const updated = notifications.map(n => 
         n.id === id ? { ...n, read: true } : n
-      ));
+      );
+      setNotifications(sortNotifications(updated));
     } catch (err) {
       console.error('标记失败:', err);
     }
