@@ -8,6 +8,7 @@ export default function PostPage() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<'lost' | 'found'>('lost');
   const [campus, setCampus] = useState<'kangmei' | 'meilin'>('kangmei');
+  const [itemType, setItemType] = useState('');
   const [description, setDescription] = useState('');
   const [contact, setContact] = useState('');
   const [foundTime, setFoundTime] = useState('');
@@ -77,6 +78,7 @@ export default function PostPage() {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('category', category);
+      formData.append('item_type', itemType || 'other');
       formData.append('campus', campus);
       formData.append('description', description);
       formData.append('contact', contact);
@@ -188,6 +190,26 @@ export default function PostPage() {
                 <span className="ml-2 text-gray-700">美林校区</span>
               </label>
             </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-medium mb-2">
+              物品分类 <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={itemType}
+              onChange={(e) => setItemType(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+              required
+            >
+              <option value="">请选择分类</option>
+              <option value="id_card">证件卡片</option>
+              <option value="electronics">电子设备</option>
+              <option value="stationery">学习用品</option>
+              <option value="daily">生活日用</option>
+              <option value="sports">体育器材</option>
+              <option value="other">其他</option>
+            </select>
           </div>
 
           <div className="mb-6">

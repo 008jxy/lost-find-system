@@ -449,3 +449,22 @@ screenshots/prompt10_默认头像.png
 8. 数据库添加campus字段
 ### 配套截图存放路径
 screenshots/prompt11_校区功能.png
+
+## 12、增加物品分类筛选功能
+    -对话时间：2026-07-15 22:14  
+    -对应功能：物品分类、分类筛选、AI匹配优化  
+    -对应文件：backend/app.py, frontend/app/post/page.tsx, frontend/app/page.tsx, frontend/app/items/[id]/page.tsx  
+### 用户提问：
+发布和首页增加"物品分类"筛选：分类包括证件卡片、电子设备、学习用品、生活日用、体育器材、其他。发布时选择分类，首页可按分类筛选；AI匹配优先匹配同品类帖子。
+### AI回复内容
+实现物品分类筛选功能：
+1. 后端：Item模型添加item_type字段，定义6种分类（id_card/electronics/stationery/daily/sports/other）
+2. 后端：发布接口接收item_type参数，必填校验
+3. 后端：列表接口和搜索接口支持item_type筛选参数
+4. 后端：AI匹配算法优化，同品类帖子相似度增加20%权重
+5. 前端：发布页添加物品分类下拉选择框，标记为必填
+6. 前端：首页添加分类筛选下拉框（所有分类/证件卡片/电子设备/学习用品/生活日用/体育器材/其他）
+7. 前端：帖子卡片和详情页显示分类标签
+8. 数据库添加item_type字段（默认值other）
+### 配套截图存放路径
+screenshots/prompt12_物品分类筛选.png

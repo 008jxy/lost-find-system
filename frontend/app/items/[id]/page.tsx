@@ -15,6 +15,7 @@ interface Item {
   user_id: number;
   title: string;
   category: 'lost' | 'found';
+  item_type: string;
   campus: 'kangmei' | 'meilin';
   description: string;
   contact: string;
@@ -25,6 +26,15 @@ interface Item {
   created_at: string;
   user?: User;
 }
+
+const ITEM_TYPES: Record<string, string> = {
+  id_card: '证件卡片',
+  electronics: '电子设备',
+  stationery: '学习用品',
+  daily: '生活日用',
+  sports: '体育器材',
+  other: '其他'
+};
 
 export default function ItemDetail() {
   const { id } = useParams();
@@ -213,6 +223,9 @@ export default function ItemDetail() {
                 </span>
                 <span className="text-sm px-2 py-1 rounded bg-blue-50 text-blue-600">
                   {item.campus === 'kangmei' ? '康美校区' : '美林校区'}
+                </span>
+                <span className="text-sm px-2 py-1 rounded bg-purple-50 text-purple-600">
+                  {ITEM_TYPES[item.item_type] || item.item_type}
                 </span>
               </div>
               <div className="flex items-center gap-4">

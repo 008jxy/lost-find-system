@@ -14,6 +14,7 @@ interface Item {
   user_id: number;
   title: string;
   category: 'lost' | 'found';
+  item_type: string;
   campus: 'kangmei' | 'meilin';
   description: string;
   contact: string;
@@ -23,16 +24,26 @@ interface Item {
   user?: User;
 }
 
+const ITEM_TYPES: Record<string, string> = {
+  id_card: '证件卡片',
+  electronics: '电子设备',
+  stationery: '学习用品',
+  daily: '生活日用',
+  sports: '体育器材',
+  other: '其他'
+};
+
 export default function Home() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'lost' | 'found'>('all');
   const [campusFilter, setCampusFilter] = useState<'all' | 'kangmei' | 'meilin'>('all');
+  const [itemTypeFilter, setItemTypeFilter] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
 
   useEffect(() => {
     fetchItems();
-  }, [filter, campusFilter]);
+  }, [filter, campusFilter, itemTypeFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -50,8 +61,20 @@ export default function Home() {
         if (campusFilter !== 'all') {
           url += `&campus=${campusFilter}`;
         }
-      } else if (campusFilter !== 'all') {
-        url += `?campus=${campusFilter}`;
+        if (itemTypeFilter) {
+          url += `&item_type=${itemTypeFilter}`;
+        }
+      } else {
+        const params: string[] = [];
+        if (campusFilter !== 'all') {
+          params.push(`campus=${campusFilter}`);
+        }
+        if (itemTypeFilter) {
+          params.push(`item_type=${itemTypeFilter}`);
+        }
+        if (params.length > 0) {
+          url += `?${params.join('&')}`;
+        }
       }
       
       const response = await fetch(url);
@@ -158,6 +181,24 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
+          <div className="relative">
+            <select
+              value={itemTypeFilter}
+              onChange={(e) => setItemTypeFilter(e.target.value)}
+              className="appearance-none px-4 py-3 rounded-xl font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors pr-8 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+            >
+              <option value="">所有分类</option>
+              <option value="id_card">证件卡片</option>
+              <option value="electronics">电子设备</option>
+              <option value="stationery">学习用品</option>
+              <option value="daily">生活日用</option>
+              <option value="sports">体育器材</option>
+              <option value="other">其他</option>
+            </select>
+            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
       </div>
 
@@ -213,6 +254,9 @@ export default function Home() {
                     </span>
                     <span className="text-sm px-2 py-1 rounded bg-blue-50 text-blue-600">
                       {item.campus === 'kangmei' ? '康美校区' : '美林校区'}
+                    </span>
+                    <span className="text-sm px-2 py-1 rounded bg-purple-50 text-purple-600">
+                      {ITEM_TYPES[item.item_type] || item.item_type}
                     </span>
                   </div>
                   <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>

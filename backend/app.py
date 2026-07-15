@@ -39,11 +39,21 @@ class User(db.Model):
     def check_password(self, password):
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
 
+ITEM_TYPES = {
+    'id_card': '证件卡片',
+    'electronics': '电子设备',
+    'stationery': '学习用品',
+    'daily': '生活日用',
+    'sports': '体育器材',
+    'other': '其他'
+}
+
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     category = db.Column(db.String(10), nullable=False)
+    item_type = db.Column(db.String(20), default='other')
     description = db.Column(db.Text, nullable=False)
     contact = db.Column(db.String(100), nullable=False)
     found_time = db.Column(db.String(50), default='')
@@ -290,10 +300,13 @@ def serve_item_image(filename):
 @app.route("/api/items", methods=["GET"])
 def get_items():
     campus = request.args.get('campus', '')
+    item_type = request.args.get('item_type', '')
     
     query = Item.query
     if campus and campus in ['kangmei', 'meilin']:
         query = query.filter_by(campus=campus)
+    if item_type and item_type in ITEM_TYPES:
+        query = query.filter_by(item_type=item_type)
     
     items = query.order_by(Item.created_at.desc()).all()
     result = []
@@ -304,6 +317,7 @@ def get_items():
             "user_id": item.user_id,
             "title": item.title,
             "category": item.category,
+            "item_type": item.item_type,
             "description": item.description,
             "contact": item.contact,
             "found_time": item.found_time,
@@ -327,6 +341,7 @@ def create_item():
     
     title = request.form.get('title')
     category = request.form.get('category')
+    item_type = request.form.get('item_type', 'other')
     description = request.form.get('description')
     contact = request.form.get('contact')
     campus = request.form.get('campus', 'kangmei')
@@ -338,6 +353,9 @@ def create_item():
     
     if campus not in ['kangmei', 'meilin']:
         campus = 'kangmei'
+    
+    if item_type not in ITEM_TYPES:
+        item_type = 'other'
     
     image_url = ''
     if 'image' in request.files:
@@ -354,6 +372,7 @@ def create_item():
         user_id=int(user_id_str),
         title=title,
         category=category,
+        item_type=item_type,
         description=description,
         contact=contact,
         found_time=found_time,
@@ -400,6 +419,7 @@ def get_item(item_id):
             "user_id": item.user_id,
             "title": item.title,
             "category": item.category,
+            "item_type": item.item_type,
             "description": item.description,
             "contact": item.contact,
             "found_time": item.found_time,
@@ -442,6 +462,8 @@ def update_item(item_id):
         item.found_location = data['found_location']
     if 'campus' in data:
         item.campus = data['campus']
+    if 'item_type' in data and data['item_type'] in ITEM_TYPES:
+        item.item_type = data['item_type']
     
     if 'status' in data:
         new_status = data['status']
@@ -494,6 +516,7 @@ def search_items():
     keyword = request.args.get('keyword', '')
     category = request.args.get('category', 'all')
     campus = request.args.get('campus', '')
+    item_type = request.args.get('item_type', '')
     
     query = Item.query
     
@@ -509,6 +532,9 @@ def search_items():
     if campus and campus in ['kangmei', 'meilin']:
         query = query.filter_by(campus=campus)
     
+    if item_type and item_type in ITEM_TYPES:
+        query = query.filter_by(item_type=item_type)
+    
     items = query.all()
     
     result = []
@@ -519,6 +545,7 @@ def search_items():
             "user_id": item.user_id,
             "title": item.title,
             "category": item.category,
+            "item_type": item.item_type,
             "description": item.description,
             "contact": item.contact,
             "found_time": item.found_time,
@@ -601,6 +628,7 @@ def ai_match():
     description = data.get('description', '')
     title = data.get('title', '')
     category = data.get('category', 'lost')
+    item_type = data.get('item_type', 'other')
     
     if not description:
         return jsonify({"code": 400, "msg": "请输入描述内容"}), 400
@@ -613,6 +641,10 @@ def ai_match():
     for item in items:
         item_full_text = f"{item.title} {item.description}"
         similarity = calculate_similarity(full_text, item_full_text)
+        
+        if item.item_type == item_type:
+            similarity = min(similarity + 0.2, 1.0)
+        
         if similarity > 0.3:
             matches.append({
                 "item_id": item.id,
@@ -639,6 +671,10 @@ def ai_match_all():
             lost_text = f"{lost.title} {lost.description}"
             found_text = f"{found.title} {found.description}"
             similarity = calculate_similarity(lost_text, found_text)
+            
+            if lost.item_type == found.item_type:
+                similarity = min(similarity + 0.2, 1.0)
+            
             if similarity > 0.4:
                 matches.append({
                     "lost_item": {
@@ -674,6 +710,9 @@ def trigger_match_and_notify(new_item):
         
         item_text = f"{item.title} {item.description}"
         similarity = calculate_similarity(new_text, item_text)
+        
+        if new_item.item_type == item.item_type:
+            similarity = min(similarity + 0.2, 1.0)
         
         if similarity > 0.4:
             if new_item.category == 'lost':
