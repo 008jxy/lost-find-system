@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+*.log
+
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+backend/.env
+uploads/
+
+.DS_Store
+Thumbs.db

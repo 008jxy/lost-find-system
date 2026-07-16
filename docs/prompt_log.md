@@ -503,3 +503,20 @@ screenshots/prompt13_站内信功能.png
  6. 发送者消息下方在1分钟内显示"撤回"按钮，点击后调用撤回接口并本地更新 
  ### 配套截图存放路径 
  screenshots/prompt14_消息撤回功能.png
+
+ ## 15、环境变量配置
+     -对话时间：2026-07-16 22:06  
+     -对应功能：环境变量、配置管理  
+     -对应文件：backend/.env, backend/.env.example, backend/app.py, .gitignore, backend/requirements.txt  
+ ### 用户提问： 
+ 帮我添加环境变量配置，将硬编码的配置改为环境变量管理 
+ ### AI回复内容 
+ 实现环境变量配置： 
+ 1. 创建backend/.env文件，包含JWT_SECRET_KEY、数据库路径、端口、服务器URL等配置项 
+ 2. 创建backend/.env.example模板文件，供团队成员参考配置 
+ 3. 修改backend/app.py，引入python-dotenv模块，使用os.getenv()读取环境变量，并设置默认值 
+ 4. 创建.gitignore文件，排除backend/.env、__pycache__、uploads等敏感目录和文件 
+ 5. 更新requirements.txt添加python-dotenv依赖 
+ 6. 验证后端服务正常启动，API接口测试通过 
+ ### 配套截图存放路径 
+ screenshots/prompt15_环境变量配置.png

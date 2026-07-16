@@ -6,17 +6,20 @@ from datetime import datetime
 import bcrypt
 import os
 import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*", "allow_headers": ["Authorization", "Content-Type"], "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}})
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lost_find.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = 'super-secret-key-change-in-production'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///lost_find.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS', 'False').lower() == 'true'
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'super-secret-key-change-in-production')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads', 'avatars')
 app.config['ITEM_IMAGE_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads', 'items')
-app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
-app.config['SERVER_URL'] = 'http://localhost:5000'
+app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', 2 * 1024 * 1024))
+app.config['SERVER_URL'] = os.getenv('SERVER_URL', 'http://localhost:5000')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['ITEM_IMAGE_FOLDER'], exist_ok=True)
@@ -114,9 +117,6 @@ def register():
 
     if User.query.filter_by(email=email).first():
         return jsonify({"code": 400, "msg": "邮箱已被注册"}), 400
-
-    if gender not in ['male', 'female']:
-        gender = 'male'
 
     user = User(username=username, email=email, gender=gender)
     user.set_password(password)
