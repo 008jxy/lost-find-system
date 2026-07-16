@@ -567,3 +567,21 @@ screenshots/prompt13_站内信功能.png
  5. 运行测试结果：10个测试用例全部通过 
  ### 配套截图存放路径 
  screenshots/prompt17_单元测试.png
+
+ ## 18、CI/CD配置
+     -对话时间：2026-07-16 22:49  
+     -对应功能：GitHub Actions自动部署  
+     -对应文件：.github/workflows/ci.yml  
+ ### 用户提问： 
+ 帮我添加CI/CD配置，使用GitHub Actions实现自动测试和构建  
+ ### AI回复内容 
+ 实现GitHub Actions CI/CD： 
+ 1. 创建.github/workflows/ci.yml配置文件 
+ 2. 触发条件：push到main分支或pull request到main分支时自动执行 
+ 3. 两个并行作业： 
+    - backend-test: 在Ubuntu环境下安装Python 3.12和依赖，运行pytest测试 
+    - frontend-build: 在Ubuntu环境下安装Node.js 20和依赖，执行npm run build构建 
+ 4. 使用actions/checkout@v4拉取代码，actions/setup-python@v5配置Python，actions/setup-node@v4配置Node.js 
+ 5. 后端测试和前端构建失败会阻止代码合并，确保代码质量 
+ ### 配套截图存放路径 
+ screenshots/prompt18_CICD配置.png
