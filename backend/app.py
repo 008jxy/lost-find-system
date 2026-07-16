@@ -8,7 +8,7 @@ import os
 import uuid
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*", "allow_headers": ["Authorization", "Content-Type"], "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}})
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lost_find.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -16,6 +16,7 @@ app.config['JWT_SECRET_KEY'] = 'super-secret-key-change-in-production'
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads', 'avatars')
 app.config['ITEM_IMAGE_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads', 'items')
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
+app.config['SERVER_URL'] = 'http://localhost:5000'
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['ITEM_IMAGE_FOLDER'], exist_ok=True)
@@ -78,6 +79,7 @@ class Message(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    image = db.Column(db.String(255), default='')
     read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
@@ -304,6 +306,12 @@ def serve_avatar(filename):
 @app.route("/uploads/items/<filename>")
 def serve_item_image(filename):
     return send_from_directory(app.config['ITEM_IMAGE_FOLDER'], filename)
+
+# 消息图片静态文件服务
+@app.route("/uploads/messages/<filename>")
+def serve_message_image(filename):
+    message_image_folder = os.path.join(app.root_path, 'uploads', 'messages')
+    return send_from_directory(message_image_folder, filename)
 
 # ========== 物品接口 ==========
 @app.route("/api/items", methods=["GET"])
@@ -650,6 +658,7 @@ def get_messages(item_id):
             "sender_id": msg.sender_id,
             "receiver_id": msg.receiver_id,
             "content": msg.content,
+            "image": msg.image,
             "created_at": msg.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             "sender": {
                 "id": sender.id,
@@ -670,30 +679,48 @@ def send_message(item_id):
     if not item:
         return jsonify({"code": 404, "msg": "帖子不存在"}), 404
     
-    data = request.get_json()
-    content = data.get('content', '').strip()
-    if not content:
+    content = request.form.get('content', '').strip()
+    image = None
+    
+    if 'image' in request.files:
+        uploaded_file = request.files['image']
+        if uploaded_file.filename != '':
+            allowed_extensions = {'jpg', 'jpeg', 'png', 'webp'}
+            if '.' in uploaded_file.filename and uploaded_file.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
+                if len(uploaded_file.read()) <= 2 * 1024 * 1024:
+                    uploaded_file.seek(0)
+                    filename = f"{uuid.uuid4()}_{uploaded_file.filename}"
+                    upload_dir = os.path.join(app.root_path, 'uploads', 'messages')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    filepath = os.path.join(upload_dir, filename)
+                    uploaded_file.save(filepath)
+                    image = f"{app.config['SERVER_URL']}/uploads/messages/{filename}"
+    
+    if not content and not image:
         return jsonify({"code": 400, "msg": "消息内容不能为空"}), 400
     
-    other_user = Message.query.filter(
-        (Message.item_id == item_id) &
-        ((Message.sender_id == user_id_int) | (Message.receiver_id == user_id_int))
-    ).first()
+    if not content:
+        content = ''
     
-    if other_user:
-        receiver_id = other_user.sender_id if other_user.receiver_id == user_id_int else other_user.receiver_id
-    else:
-        receiver_id = item.user_id
+    existing_messages = Message.query.filter_by(item_id=item_id).all()
+    receiver_id = item.user_id
     
-    if user_id_int == receiver_id:
-        return jsonify({"code": 400, "msg": "不能给自己发消息"}), 400
+    for msg in existing_messages:
+        if msg.sender_id != user_id_int:
+            receiver_id = msg.sender_id
+            break
     
     message = Message(
         item_id=item_id,
         sender_id=user_id_int,
         receiver_id=receiver_id,
-        content=content
+        content=content,
+        image=image
     )
+    
+    if message.sender_id == message.receiver_id:
+        return jsonify({"code": 400, "msg": "不能给自己发消息"}), 400
+    
     db.session.add(message)
     db.session.commit()
     
@@ -708,6 +735,7 @@ def send_message(item_id):
             "sender_id": message.sender_id,
             "receiver_id": message.receiver_id,
             "content": message.content,
+            "image": message.image,
             "created_at": message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             "sender": {
                 "id": sender.id,
