@@ -26,7 +26,7 @@ jobs:
     - name: Run pytest
       run: |
         cd backend
-        python -m pytest tests/test_api.py -v
+        PYTHONPATH=. python -m pytest tests/test_api.py -v
 
   frontend-build:
     runs-on: ubuntu-latest

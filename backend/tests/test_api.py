@@ -1,7 +1,10 @@
 import pytest
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+BACKEND_DIR = os.path.dirname(TEST_DIR)
+sys.path.insert(0, BACKEND_DIR)
 
 from app import app, db
 
