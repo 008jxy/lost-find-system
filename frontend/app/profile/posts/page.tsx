@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { validateToken, clearAuthStorage } from '../../utils/auth';
@@ -23,7 +23,7 @@ interface Item {
   user?: User;
 }
 
-export default function UserPostsPage() {
+function PostsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
@@ -187,5 +187,13 @@ export default function UserPostsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function UserPostsPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-8">加载中...</div>}>
+      <PostsContent />
+    </Suspense>
   );
 }
