@@ -346,15 +346,15 @@ export default function ItemDetail() {
     <div className="max-w-4xl mx-auto lg:max-w-5xl">
       <div className="bg-white rounded-xl shadow-xl overflow-hidden">
         <div className="flex items-center gap-4 p-4 border-b">
-          <Link
-            href="/messages"
+          <button
+            onClick={() => window.history.back()}
             className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="text-sm">返回消息</span>
-          </Link>
+            <span className="text-sm">返回上一页</span>
+          </button>
         </div>
         {item.image && (
           <div className="relative cursor-pointer" onClick={() => setShowImageModal(true)}>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -58,7 +58,10 @@ export default function Home() {
     try {
       let url = 'http://localhost:5000/api/items';
       if (searchKeyword) {
-        url = `http://localhost:5000/api/items/search?keyword=${encodeURIComponent(searchKeyword)}&category=${filter}`;
+        url = `http://localhost:5000/api/items/search?keyword=${encodeURIComponent(searchKeyword)}`;
+        if (filter !== 'all') {
+          url += `&category=${filter}`;
+        }
         if (campusFilter !== 'all') {
           url += `&campus=${campusFilter}`;
         }
@@ -119,35 +122,35 @@ export default function Home() {
         <p className="text-gray-600">AI智能匹配，让失物早日回家</p>
         <div className="flex gap-8 mt-6">
           <button
-            onClick={() => { setFilter('all'); setStatusFilter('all'); }}
+            onClick={() => { setFilter('all'); setStatusFilter('all'); setCampusFilter('all'); setItemTypeFilter(''); }}
             className="flex flex-col items-start p-4 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
           >
             <div className="text-3xl font-bold text-gray-800">{items.length}</div>
             <div className="text-gray-500 text-sm">总帖子数</div>
           </button>
           <button
-            onClick={() => { setFilter('lost'); setStatusFilter('all'); }}
+            onClick={() => { setFilter('lost'); setStatusFilter('all'); setCampusFilter('all'); setItemTypeFilter(''); }}
             className="flex flex-col items-start p-4 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
           >
             <div className="text-3xl font-bold text-red-600">{lostCount}</div>
             <div className="text-gray-500 text-sm">寻物启事</div>
           </button>
           <button
-            onClick={() => { setFilter('found'); setStatusFilter('all'); }}
+            onClick={() => { setFilter('found'); setStatusFilter('all'); setCampusFilter('all'); setItemTypeFilter(''); }}
             className="flex flex-col items-start p-4 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
           >
             <div className="text-3xl font-bold text-green-600">{foundCount}</div>
             <div className="text-gray-500 text-sm">失物招领</div>
           </button>
           <button
-            onClick={() => { setStatusFilter('pending'); }}
+            onClick={() => { setStatusFilter('pending'); setCampusFilter('all'); setItemTypeFilter(''); }}
             className="flex flex-col items-start p-4 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
           >
             <div className="text-3xl font-bold text-yellow-600">{pendingCount}</div>
             <div className="text-gray-500 text-sm">待认领</div>
           </button>
           <button
-            onClick={() => { setStatusFilter('completed'); }}
+            onClick={() => { setStatusFilter('completed'); setCampusFilter('all'); setItemTypeFilter(''); }}
             className="flex flex-col items-start p-4 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
           >
             <div className="text-3xl font-bold text-gray-600">{completedCount}</div>
@@ -255,11 +258,11 @@ export default function Home() {
             {searchKeyword ? '试试其他关键词吧！' : '成为第一个发布帖子的人吧！'}
           </p>
           <Link
-            href="/profile"
-            className="inline-block mt-4 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            去发布帖子
-          </Link>
+              href="/post"
+              className="inline-block mt-4 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              去发布帖子
+            </Link>
         </div>
       ) : (
         <div className="space-y-4">

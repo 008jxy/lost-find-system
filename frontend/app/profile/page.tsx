@@ -1,7 +1,8 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { validateToken, clearAuthStorage } from '../utils/auth';
 
 interface UserInfo {
@@ -39,6 +40,7 @@ export default function Profile() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -48,6 +50,7 @@ export default function Profile() {
         setUsername('');
         setAvatar('');
         setIsValidated(true);
+        router.push('/login');
         return;
       }
       
