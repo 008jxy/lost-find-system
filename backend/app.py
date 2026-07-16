@@ -6,11 +6,26 @@ from datetime import datetime
 import bcrypt
 import os
 import uuid
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = Flask(__name__)
+
+log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+log_file = os.getenv('LOG_FILE', 'app.log')
+
+logging.basicConfig(
+    level=getattr(logging, log_level),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file, encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*", "allow_headers": ["Authorization", "Content-Type"], "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}})
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///lost_find.db')
@@ -106,41 +121,48 @@ def register():
     data = request.get_json()
     username = data.get('username')
     email = data.get('email')
-    password = data.get('password')
     gender = data.get('gender', 'male')
-
-    if not username or not email or not password:
+    logger.info(f"用户注册请求: username={username}, email={email}, gender={gender}")
+    
+    if not username or not email or not data.get('password'):
+        logger.warning(f"注册失败: 参数缺失")
         return jsonify({"code": 400, "msg": "用户名、邮箱、密码不能为空"}), 400
 
     if User.query.filter_by(username=username).first():
+        logger.warning(f"注册失败: 用户名已存在 - {username}")
         return jsonify({"code": 400, "msg": "用户名已存在"}), 400
 
     if User.query.filter_by(email=email).first():
+        logger.warning(f"注册失败: 邮箱已被注册 - {email}")
         return jsonify({"code": 400, "msg": "邮箱已被注册"}), 400
 
     user = User(username=username, email=email, gender=gender)
-    user.set_password(password)
+    user.set_password(data.get('password'))
     user.avatar = '/avatar-female.jpg' if gender == 'female' else '/avatar-male.jpg'
     db.session.add(user)
     db.session.commit()
 
+    logger.info(f"用户注册成功: id={user.id}, username={username}")
     return jsonify({"code": 200, "msg": "注册成功", "data": {"username": username, "avatar": user.avatar}}), 201
 
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
     username = data.get('username')
-    password = data.get('password')
+    logger.info(f"用户登录请求: username={username}")
 
-    if not username or not password:
+    if not username or not data.get('password'):
+        logger.warning(f"登录失败: 参数缺失")
         return jsonify({"code": 400, "msg": "用户名和密码不能为空"}), 400
 
     user = User.query.filter_by(username=username).first()
 
-    if not user or not user.check_password(password):
+    if not user or not user.check_password(data.get('password')):
+        logger.warning(f"登录失败: 用户名或密码错误 - {username}")
         return jsonify({"code": 401, "msg": "用户名或密码错误"}), 401
 
     access_token = create_access_token(identity=str(user.id))
+    logger.info(f"用户登录成功: id={user.id}, username={username}")
     return jsonify({
         "code": 200,
         "msg": "登录成功",
@@ -365,8 +387,10 @@ def create_item():
     campus = request.form.get('campus', 'kangmei')
     found_time = request.form.get('found_time', '')
     found_location = request.form.get('found_location', '')
+    logger.info(f"发布帖子请求: user_id={user_id_str}, title={title}, category={category}, campus={campus}")
     
     if not title or not category or not description or not contact or not campus:
+        logger.warning(f"发布帖子失败: 参数缺失")
         return jsonify({"code": 400, "msg": "标题、类型、描述、联系方式、校区不能为空"}), 400
     
     if campus not in ['kangmei', 'meilin']:
@@ -402,6 +426,7 @@ def create_item():
     db.session.add(new_item)
     db.session.commit()
 
+    logger.info(f"发布帖子成功: id={new_item.id}, title={title}")
     trigger_match_and_notify(new_item)
 
     return jsonify({
