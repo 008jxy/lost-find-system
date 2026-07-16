@@ -34,6 +34,7 @@ interface Message {
   receiver_id: number;
   content: string;
   image?: string;
+  read: boolean;
   created_at: string;
   sender?: User;
 }
@@ -654,6 +655,11 @@ export default function ItemDetail() {
                               />
                             )}
                           </div>
+                          {isMe && (
+                            <span className={`text-xs mt-0.5 ${msg.read ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {msg.read ? '已读' : '未读'}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

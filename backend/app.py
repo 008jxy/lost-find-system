@@ -659,6 +659,7 @@ def get_messages(item_id):
             "receiver_id": msg.receiver_id,
             "content": msg.content,
             "image": msg.image,
+            "read": msg.read,
             "created_at": msg.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             "sender": {
                 "id": sender.id,
