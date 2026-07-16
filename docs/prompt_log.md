@@ -541,3 +541,29 @@ screenshots/prompt13_站内信功能.png
  7. 测试验证：登录请求已成功记录到日志文件 
  ### 配套截图存放路径 
  screenshots/prompt16_后端日志系统.png
+
+ ## 17、单元测试
+     -对话时间：2026-07-16 22:35  
+     -对应功能：pytest单元测试  
+     -对应文件：backend/tests/test_api.py, backend/requirements.txt  
+ ### 用户提问： 
+ 帮我添加单元测试，使用pytest框架  
+ ### AI回复内容 
+ 实现pytest单元测试： 
+ 1. 创建backend/tests/test_api.py测试文件，包含10个测试用例： 
+    - test_register: 正常注册用户 
+    - test_register_duplicate_username: 重复用户名注册验证 
+    - test_register_missing_fields: 缺少参数注册验证 
+    - test_login: 正常登录获取token 
+    - test_login_invalid_credentials: 无效凭证登录验证 
+    - test_get_user: 获取用户信息（需认证） 
+    - test_create_item: 发布帖子（需认证） 
+    - test_create_item_missing_fields: 缺少参数发布帖子验证 
+    - test_get_items: 获取物品列表 
+    - test_test_api: API连通性测试 
+ 2. 使用内存数据库（sqlite:///:memory:）进行测试，测试前后自动创建/销毁表 
+ 3. 测试覆盖用户认证、帖子管理等核心功能 
+ 4. 更新requirements.txt添加pytest依赖 
+ 5. 运行测试结果：10个测试用例全部通过 
+ ### 配套截图存放路径 
+ screenshots/prompt17_单元测试.png
