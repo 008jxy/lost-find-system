@@ -29,6 +29,7 @@ interface Message {
   content: string;
   image?: string;
   read: boolean;
+  recalled: boolean;
   created_at: string;
   sender?: User;
 }
@@ -197,6 +198,36 @@ export default function MessagesPage() {
     }
   };
 
+  const canRecall = (createdAt: string) => {
+    const now = new Date();
+    const msgDate = new Date(createdAt);
+    const diffSeconds = (now.getTime() - msgDate.getTime()) / 1000;
+    return diffSeconds <= 60;
+  };
+
+  const handleRecall = async (msgId: number) => {
+    if (!confirm('确定要撤回这条消息吗？')) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/messages/${msgId}/recall`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.code === 200) {
+        setMessages(prev => prev.map(m => m.id === msgId ? { ...m, recalled: true } : m));
+      } else {
+        alert(data.msg || '撤回失败');
+      }
+    } catch (err) {
+      console.error('撤回消息失败:', err);
+      alert('撤回失败，请重试');
+    }
+  };
+
   const shouldShowTimestamp = (current: Message, prev: Message | null) => {
     if (!prev) return true;
     const diff = new Date(current.created_at).getTime() - new Date(prev.created_at).getTime();
@@ -295,28 +326,47 @@ export default function MessagesPage() {
                         <div className={`px-3 py-2 rounded-lg ${
                           isMe ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-800'
                         }`}>
-                          {msg.content && <p className="text-sm break-words">{msg.content}</p>}
-                          {msg.image && (
-                            <img
-                              src={msg.image}
-                              alt="消息图片"
-                              className={`max-w-[150px] h-auto rounded cursor-pointer hover:opacity-80 transition-opacity ${msg.content ? 'mt-2' : ''}`}
-                              onClick={() => {
-                                const modal = document.createElement('div');
-                                modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
-                                modal.innerHTML = `
-                                  <img src="${msg.image}" alt="预览" className="max-w-[90%] max-h-[90%] object-contain" />
-                                `;
-                                modal.onclick = () => modal.remove();
-                                document.body.appendChild(modal);
-                              }}
-                            />
+                          {msg.recalled ? (
+                            <p className="text-sm text-gray-500">消息已撤回</p>
+                          ) : (
+                            <>
+                              {msg.content && <p className="text-sm break-words">{msg.content}</p>}
+                              {msg.image && (
+                                <img
+                                  src={msg.image}
+                                  alt="消息图片"
+                                  className={`max-w-[150px] h-auto rounded cursor-pointer hover:opacity-80 transition-opacity ${msg.content ? 'mt-2' : ''}`}
+                                  onClick={() => {
+                                    const modal = document.createElement('div');
+                                    modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
+                                    modal.innerHTML = `
+                                      <img src="${msg.image}" alt="预览" className="max-w-[90%] max-h-[90%] object-contain" />
+                                    `;
+                                    modal.onclick = () => modal.remove();
+                                    document.body.appendChild(modal);
+                                  }}
+                                />
+                              )}
+                            </>
                           )}
                         </div>
-                        {isMe && (
-                          <span className={`text-xs mt-0.5 ${msg.read ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {msg.read ? '已读' : '未读'}
-                          </span>
+                        {isMe && !msg.recalled && (
+                          <div className={`flex items-center gap-2 mt-0.5 ${isMe ? 'justify-end' : ''}`}>
+                            <span className={`text-xs ${msg.read ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {msg.read ? '已读' : '未读'}
+                            </span>
+                            {canRecall(msg.created_at) && (
+                              <button
+                                onClick={() => handleRecall(msg.id)}
+                                className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                              >
+                                撤回
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {isMe && msg.recalled && (
+                          <span className="text-xs text-gray-400 mt-0.5">已撤回</span>
                         )}
                       </div>
                     </div>

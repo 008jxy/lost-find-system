@@ -486,3 +486,20 @@ screenshots/prompt12_物品分类筛选.png
 7. 时间格式化：刚刚/X分钟前/X小时前/X天前
 ### 配套截图存放路径
 screenshots/prompt13_站内信功能.png
+
+## 14、消息撤回功能
+     -对话时间：2026-07-16 20:52  
+     -对应功能：消息撤回、1分钟内撤回  
+     -对应文件：backend/app.py, frontend/app/messages/page.tsx, frontend/app/items/[id]/page.tsx  
+ ### 用户提问： 
+ 帮我添加消息撤回功能，支持在消息发出后1分钟内撤回已发送的消息 
+ ### AI回复内容 
+ 实现消息撤回功能： 
+ 1. 后端Message模型添加recalled字段（Boolean，默认false） 
+ 2. 后端新建POST /api/messages/<msg_id>/recall接口：验证发送者身份、60秒时间限制、设置recalled=True 
+ 3. 后端消息列表API返回recalled字段 
+ 4. 前端Message接口添加recalled字段 
+ 5. 已撤回消息显示"消息已撤回"替代原内容 
+ 6. 发送者消息下方在1分钟内显示"撤回"按钮，点击后调用撤回接口并本地更新 
+ ### 配套截图存放路径 
+ screenshots/prompt14_消息撤回功能.png

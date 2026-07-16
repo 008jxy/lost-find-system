@@ -81,6 +81,7 @@ class Message(db.Model):
     content = db.Column(db.Text, nullable=False)
     image = db.Column(db.String(255), default='')
     read = db.Column(db.Boolean, default=False)
+    recalled = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 # 创建数据库表
@@ -660,6 +661,7 @@ def get_messages(item_id):
             "content": msg.content,
             "image": msg.image,
             "read": msg.read,
+            "recalled": msg.recalled,
             "created_at": msg.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             "sender": {
                 "id": sender.id,
@@ -819,6 +821,31 @@ def mark_messages_read(item_id):
     db.session.commit()
     
     return jsonify({"code": 200, "msg": "已标记为已读"})
+
+@app.route("/api/messages/<int:msg_id>/recall", methods=["POST"])
+@jwt_required()
+def recall_message(msg_id):
+    user_id_str = get_jwt_identity()
+    user_id_int = int(user_id_str)
+    
+    message = Message.query.get(msg_id)
+    if not message:
+        return jsonify({"code": 404, "msg": "消息不存在"}), 404
+    
+    if message.sender_id != user_id_int:
+        return jsonify({"code": 403, "msg": "只能撤回自己发送的消息"}), 403
+    
+    if message.recalled:
+        return jsonify({"code": 400, "msg": "消息已被撤回"}), 400
+    
+    time_diff = (datetime.now() - message.created_at).total_seconds()
+    if time_diff > 60:
+        return jsonify({"code": 400, "msg": "只能在消息发出后1分钟内撤回"}), 400
+    
+    message.recalled = True
+    db.session.commit()
+    
+    return jsonify({"code": 200, "msg": "撤回成功"})
 
 # ========== AI匹配接口 ==========
 @app.route("/api/match", methods=["POST"])
