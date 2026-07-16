@@ -78,6 +78,7 @@ class Message(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 # 创建数据库表
@@ -669,18 +670,28 @@ def send_message(item_id):
     if not item:
         return jsonify({"code": 404, "msg": "帖子不存在"}), 404
     
-    if item.user_id == user_id_int:
-        return jsonify({"code": 400, "msg": "不能给自己发消息"}), 400
-    
     data = request.get_json()
     content = data.get('content', '').strip()
     if not content:
         return jsonify({"code": 400, "msg": "消息内容不能为空"}), 400
     
+    other_user = Message.query.filter(
+        (Message.item_id == item_id) &
+        ((Message.sender_id == user_id_int) | (Message.receiver_id == user_id_int))
+    ).first()
+    
+    if other_user:
+        receiver_id = other_user.sender_id if other_user.receiver_id == user_id_int else other_user.receiver_id
+    else:
+        receiver_id = item.user_id
+    
+    if user_id_int == receiver_id:
+        return jsonify({"code": 400, "msg": "不能给自己发消息"}), 400
+    
     message = Message(
         item_id=item_id,
         sender_id=user_id_int,
-        receiver_id=item.user_id,
+        receiver_id=receiver_id,
         content=content
     )
     db.session.add(message)
@@ -730,6 +741,12 @@ def get_conversations():
         other_user = User.query.get(other_user_id)
         item = Item.query.get(msg.item_id)
         
+        unread_count = Message.query.filter_by(
+            item_id=msg.item_id,
+            receiver_id=user_id_int,
+            read=False
+        ).count()
+        
         conversations.append({
             "item_id": msg.item_id,
             "item_title": item.title if item else "已删除帖子",
@@ -740,10 +757,39 @@ def get_conversations():
                 "avatar": other_user.avatar
             } if other_user else None,
             "last_message": msg.content,
-            "last_time": msg.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            "last_time": msg.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "unread_count": unread_count
         })
     
     return jsonify({"code": 200, "conversations": conversations})
+
+@app.route("/api/messages/unread-count", methods=["GET"])
+@jwt_required()
+def get_unread_count():
+    user_id_str = get_jwt_identity()
+    user_id_int = int(user_id_str)
+    
+    count = Message.query.filter_by(
+        receiver_id=user_id_int,
+        read=False
+    ).count()
+    
+    return jsonify({"code": 200, "count": count})
+
+@app.route("/api/messages/<int:item_id>/read", methods=["POST"])
+@jwt_required()
+def mark_messages_read(item_id):
+    user_id_str = get_jwt_identity()
+    user_id_int = int(user_id_str)
+    
+    Message.query.filter_by(
+        item_id=item_id,
+        receiver_id=user_id_int,
+        read=False
+    ).update({"read": True})
+    db.session.commit()
+    
+    return jsonify({"code": 200, "msg": "已标记为已读"})
 
 # ========== AI匹配接口 ==========
 @app.route("/api/match", methods=["POST"])

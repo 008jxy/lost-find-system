@@ -18,6 +18,7 @@ interface Conversation {
   other_user: User;
   last_message: string;
   last_time: string;
+  unread_count: number;
 }
 
 interface Message {
@@ -102,6 +103,16 @@ export default function MessagesPage() {
   const handleOpenChat = (conv: Conversation) => {
     setActiveChat(conv);
     fetchMessages(conv.item_id);
+    
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`http://localhost:5000/api/messages/${conv.item_id}/read`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(() => {
+        fetchConversations();
+      });
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -125,7 +136,8 @@ export default function MessagesPage() {
       if (data.code === 200) {
         setNewMessage('');
         fetchMessages(activeChat.item_id);
-        fetchConversations();
+      } else {
+        console.error('发送失败:', data.msg);
       }
     } catch (err) {
       console.error('发送消息失败:', err);
@@ -291,11 +303,18 @@ export default function MessagesPage() {
                   idx > 0 ? 'border-t' : ''
                 }`}
               >
-                <img
-                  src={conv.other_user?.avatar || '/avatar-male.jpg'}
-                  alt={conv.other_user?.username || '用户'}
-                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                />
+                <div className="relative">
+                  <img
+                    src={conv.other_user?.avatar || '/avatar-male.jpg'}
+                    alt={conv.other_user?.username || '用户'}
+                    className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                  />
+                  {conv.unread_count > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                      {conv.unread_count > 99 ? '99+' : conv.unread_count}
+                    </span>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-medium text-gray-900 truncate">

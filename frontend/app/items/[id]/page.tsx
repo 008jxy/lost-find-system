@@ -190,6 +190,11 @@ export default function ItemDetail() {
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
+        
+        await fetch(`http://localhost:5000/api/messages/${item.id}/read`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
     } catch (err) {
       console.error('获取消息失败:', err);
