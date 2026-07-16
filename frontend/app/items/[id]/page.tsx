@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import API_BASE_URL from '../../utils/api';
 
 interface User {
   id: number;
@@ -85,7 +86,7 @@ export default function ItemDetail() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`http://localhost:5000/api/items/${id}`);
+      const response = await fetch(`${API_BASE_URL}/api/items/${id}`);
       const data = await response.json();
       if (data.code === 200) {
         setItem(data.data);
@@ -111,7 +112,7 @@ export default function ItemDetail() {
     if (!token || !item) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/items/${item.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/items/${item.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +137,7 @@ export default function ItemDetail() {
     if (!token || !item) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/items/${item.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/items/${item.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -163,7 +164,7 @@ export default function ItemDetail() {
     if (!token || !item) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/items/${item.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/items/${item.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -186,7 +187,7 @@ export default function ItemDetail() {
     if (!token) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/messages/${item.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${item.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -196,7 +197,7 @@ export default function ItemDetail() {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
         
-        await fetch(`http://localhost:5000/api/messages/${item.id}/read`, {
+        await fetch(`${API_BASE_URL}/api/messages/${item.id}/read`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -244,7 +245,7 @@ export default function ItemDetail() {
         formData.append('image', imageFile);
       }
 
-      const response = await fetch(`http://localhost:5000/api/messages/${item.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${item.id}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -296,7 +297,7 @@ export default function ItemDetail() {
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/messages/${msgId}/recall`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${msgId}/recall`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

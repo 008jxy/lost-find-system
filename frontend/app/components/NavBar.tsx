@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import API_BASE_URL from '../utils/api';
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -14,7 +15,7 @@ export default function NavBar() {
       if (!token) return;
 
       try {
-        const response = await fetch('http://localhost:5000/api/messages/unread-count', {
+        const response = await fetch(`${API_BASE_URL}/api/messages/unread-count`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();

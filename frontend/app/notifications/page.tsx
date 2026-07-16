@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { validateToken, clearAuthStorage } from '../utils/auth';
+import API_BASE_URL from '../utils/api';
 
 interface Notification {
   id: number;
@@ -50,7 +51,7 @@ export default function NotificationsPage() {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/notifications', {
+      const response = await fetch(`${API_BASE_URL}/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -67,7 +68,7 @@ export default function NotificationsPage() {
     if (!token) return;
     
     try {
-      await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+      await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -85,7 +86,7 @@ export default function NotificationsPage() {
     if (!token) return;
     
     try {
-      await fetch(`http://localhost:5000/api/notifications/${id}`, {
+      await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

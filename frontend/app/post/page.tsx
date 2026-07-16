@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { validateToken, clearAuthStorage } from '../utils/auth';
+import API_BASE_URL from '../utils/api';
 
 export default function PostPage() {
   const [title, setTitle] = useState('');
@@ -88,7 +89,7 @@ export default function PostPage() {
         formData.append('image', image);
       }
 
-      const response = await fetch('http://localhost:5000/api/items', {
+      const response = await fetch(`${API_BASE_URL}/api/items`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

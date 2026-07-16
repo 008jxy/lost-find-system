@@ -311,7 +311,7 @@ def upload_avatar():
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(file_path)
     
-    user.avatar = f"http://localhost:5000/uploads/avatars/{filename}"
+    user.avatar = f"{app.config['SERVER_URL']}/uploads/avatars/{filename}"
     db.session.commit()
     
     return jsonify({
@@ -408,7 +408,7 @@ def create_item():
                 filename = f"{uuid.uuid4().hex}.{file.filename.rsplit('.', 1)[1].lower()}"
                 file_path = os.path.join(app.config['ITEM_IMAGE_FOLDER'], filename)
                 file.save(file_path)
-                image_url = f"http://localhost:5000/uploads/items/{filename}"
+                image_url = f"{app.config['SERVER_URL']}/uploads/items/{filename}"
     
     new_item = Item(
         user_id=int(user_id_str),
@@ -1028,4 +1028,5 @@ def calculate_similarity(text1, text2):
     return min(jaccard, 1.0)
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    port = int(os.getenv('SERVER_PORT', 5000))
+    app.run(host="0.0.0.0", port=port, debug=os.getenv('FLASK_DEBUG', 'True').lower() == 'true')

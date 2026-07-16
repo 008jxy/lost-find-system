@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { validateToken } from '../utils/auth';
+import API_BASE_URL from '../utils/api';
 
 interface MatchItem {
   item_id: number;
@@ -55,12 +56,12 @@ export default function MatchPage() {
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:5000/api/user', {
+      const response = await fetch(`${API_BASE_URL}/api/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
       if (data.code === 200) {
-        const response = await fetch('http://localhost:5000/api/items');
+        const response = await fetch(`${API_BASE_URL}/api/items`);
         const items = await response.json();
         const myItems = items.filter((item: { user_id: number }) => item.user_id === data.data.id);
         
@@ -70,7 +71,7 @@ export default function MatchPage() {
         for (const item of myItems) {
           if (item.status !== 'pending') continue;
           
-          const matchResponse = await fetch('http://localhost:5000/api/match', {
+          const matchResponse = await fetch(`${API_BASE_URL}/api/match`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -101,7 +102,7 @@ export default function MatchPage() {
   const handleBatchMatch = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/match/all');
+      const response = await fetch(`${API_BASE_URL}/api/match/all`);
       const data = await response.json();
       setMatches(data.matches || []);
       setMyMatches([]);
@@ -117,7 +118,7 @@ export default function MatchPage() {
     
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/match', {
+      const response = await fetch(`${API_BASE_URL}/api/match`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

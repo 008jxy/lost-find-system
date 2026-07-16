@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import API_BASE_URL from './utils/api';
 
 interface User {
   id: number;
@@ -56,9 +57,9 @@ export default function Home() {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      let url = 'http://localhost:5000/api/items';
+      let url = `${API_BASE_URL}/api/items`;
       if (searchKeyword) {
-        url = `http://localhost:5000/api/items/search?keyword=${encodeURIComponent(searchKeyword)}`;
+        url = `${API_BASE_URL}/api/items/search?keyword=${encodeURIComponent(searchKeyword)}`;
         if (filter !== 'all') {
           url += `&category=${filter}`;
         }

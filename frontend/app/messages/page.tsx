@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { validateToken, clearAuthStorage } from '../utils/auth';
+import API_BASE_URL from '../utils/api';
 
 interface User {
   id: number;
@@ -71,7 +72,7 @@ export default function MessagesPage() {
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:5000/api/conversations', {
+      const response = await fetch(`${API_BASE_URL}/api/conversations`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -90,7 +91,7 @@ export default function MessagesPage() {
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/messages/${itemId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${itemId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -132,7 +133,7 @@ export default function MessagesPage() {
     
     const token = localStorage.getItem('token');
     if (token) {
-      fetch(`http://localhost:5000/api/messages/${conv.item_id}/read`, {
+      fetch(`${API_BASE_URL}/api/messages/${conv.item_id}/read`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       }).then(() => {
@@ -158,7 +159,7 @@ export default function MessagesPage() {
         formData.append('image', imageFile);
       }
 
-      const response = await fetch(`http://localhost:5000/api/messages/${activeChat.item_id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${activeChat.item_id}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -212,7 +213,7 @@ export default function MessagesPage() {
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/messages/${msgId}/recall`, {
+      const response = await fetch(`${API_BASE_URL}/api/messages/${msgId}/recall`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

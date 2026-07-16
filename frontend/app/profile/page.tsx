@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { validateToken, clearAuthStorage } from '../utils/auth';
+import API_BASE_URL from '../utils/api';
 
 interface UserInfo {
   id: number;
@@ -72,7 +73,7 @@ export default function Profile() {
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:5000/api/user', {
+      const response = await fetch(`${API_BASE_URL}/api/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -91,7 +92,7 @@ export default function Profile() {
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:5000/api/user/stats', {
+      const response = await fetch(`${API_BASE_URL}/api/user/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -128,7 +129,7 @@ export default function Profile() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/upload/avatar', {
+      const response = await fetch(`${API_BASE_URL}/api/upload/avatar`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -174,7 +175,7 @@ export default function Profile() {
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:5000/api/user', {
+      const response = await fetch(`${API_BASE_URL}/api/user`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -226,7 +227,7 @@ export default function Profile() {
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:5000/api/user', {
+      const response = await fetch(`${API_BASE_URL}/api/user`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

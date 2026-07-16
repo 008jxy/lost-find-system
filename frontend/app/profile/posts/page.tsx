@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { validateToken, clearAuthStorage } from '../../utils/auth';
+import API_BASE_URL from '../../utils/api';
 
 interface User {
   id: number;
@@ -56,7 +57,7 @@ function PostsContent() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/user/posts', {
+      const response = await fetch(`${API_BASE_URL}/api/user/posts`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
