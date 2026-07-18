@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { validateToken } from '../utils/auth';
 import API_BASE_URL from '../utils/api';
 
@@ -30,6 +31,7 @@ interface MatchResult {
 }
 
 export default function MatchPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [myMatches, setMyMatches] = useState<MatchItem[]>([]);
@@ -103,6 +105,7 @@ export default function MatchPage() {
     const token = localStorage.getItem('token');
     if (!token) {
       alert('请先登录');
+      router.push('/login');
       return;
     }
     
@@ -125,6 +128,7 @@ export default function MatchPage() {
     const token = localStorage.getItem('token');
     if (!token) {
       alert('请先登录');
+      router.push('/login');
       return;
     }
     
