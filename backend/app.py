@@ -881,7 +881,7 @@ def recall_message(msg_id):
     if message.recalled:
         return jsonify({"code": 400, "msg": "消息已被撤回"}), 400
     
-    time_diff = (datetime.now(timezone.utc) - message.created_at).total_seconds()
+    time_diff = (datetime.now(timezone.utc) - message.created_at.replace(tzinfo=timezone.utc)).total_seconds()
     if time_diff > 60:
         return jsonify({"code": 400, "msg": "只能在消息发出后1分钟内撤回"}), 400
     
