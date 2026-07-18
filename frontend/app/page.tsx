@@ -82,7 +82,10 @@ export default function Home() {
         }
       }
       
-      const response = await fetch(url);
+      const token = localStorage.getItem('token');
+      const response = await fetch(url, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       const data = await response.json();
       
       if (searchKeyword && Array.isArray(data)) {

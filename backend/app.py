@@ -354,6 +354,10 @@ def get_items():
         query = query.filter_by(item_type=item_type)
     
     items = query.order_by(Item.created_at.desc()).all()
+    
+    token = request.headers.get('Authorization')
+    is_logged_in = token and token.startswith('Bearer ')
+    
     result = []
     for item in items:
         user = User.query.get(item.user_id)
@@ -364,7 +368,7 @@ def get_items():
             "category": item.category,
             "item_type": item.item_type,
             "description": item.description,
-            "contact": item.contact,
+            "contact": item.contact if is_logged_in else '******',
             "found_time": item.found_time,
             "found_location": item.found_location,
             "campus": item.campus,
@@ -460,6 +464,10 @@ def get_item(item_id):
     
     user = User.query.get(item.user_id)
     
+    token = request.headers.get('Authorization')
+    is_logged_in = token and token.startswith('Bearer ')
+    logger.info(f"物品详情请求: item_id={item_id}, token_exists={bool(token)}, is_logged_in={is_logged_in}")
+    
     return jsonify({
         "code": 200,
         "data": {
@@ -469,7 +477,7 @@ def get_item(item_id):
             "category": item.category,
             "item_type": item.item_type,
             "description": item.description,
-            "contact": item.contact,
+            "contact": item.contact if is_logged_in else '******',
             "found_time": item.found_time,
             "found_location": item.found_location,
             "campus": item.campus,
@@ -585,6 +593,9 @@ def search_items():
     
     items = query.all()
     
+    token = request.headers.get('Authorization')
+    is_logged_in = token and token.startswith('Bearer ')
+    
     result = []
     for item in items:
         user = User.query.get(item.user_id)
@@ -595,7 +606,7 @@ def search_items():
             "category": item.category,
             "item_type": item.item_type,
             "description": item.description,
-            "contact": item.contact,
+            "contact": item.contact if is_logged_in else '******',
             "found_time": item.found_time,
             "found_location": item.found_location,
             "campus": item.campus,
@@ -879,7 +890,9 @@ def recall_message(msg_id):
 
 # ========== AI匹配接口 ==========
 @app.route("/api/match", methods=["POST"])
+@jwt_required()
 def ai_match():
+    user_id_str = get_jwt_identity()
     data = request.get_json()
     description = data.get('description', '')
     title = data.get('title', '')
@@ -917,7 +930,9 @@ def ai_match():
     return jsonify({"code": 200, "matches": matches[:5]})
 
 @app.route("/api/match/all", methods=["GET"])
+@jwt_required()
 def ai_match_all():
+    user_id_str = get_jwt_identity()
     lost_items = Item.query.filter_by(category='lost', status='pending').all()
     found_items = Item.query.filter_by(category='found', status='pending').all()
     

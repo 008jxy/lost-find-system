@@ -86,7 +86,10 @@ export default function ItemDetail() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`${API_BASE_URL}/api/items/${id}`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/items/${id}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       const data = await response.json();
       if (data.code === 200) {
         setItem(data.data);
@@ -500,7 +503,16 @@ export default function ItemDetail() {
 
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">联系方式</h3>
-                <p className="text-gray-600">{item.contact}</p>
+                {item.contact === '******' ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">请先登录查看联系方式</span>
+                    <Link href="/login" className="text-purple-600 hover:text-purple-700 font-medium">
+                      立即登录
+                    </Link>
+                  </div>
+                ) : (
+                  <p className="text-gray-600">{item.contact}</p>
+                )}
               </div>
 
               {(item.found_time || item.found_location) && (

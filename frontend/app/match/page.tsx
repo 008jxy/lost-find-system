@@ -100,9 +100,17 @@ export default function MatchPage() {
   };
 
   const handleBatchMatch = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('请先登录');
+      return;
+    }
+    
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/match/all`);
+      const response = await fetch(`${API_BASE_URL}/api/match/all`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
       const data = await response.json();
       setMatches(data.matches || []);
       setMyMatches([]);
@@ -114,13 +122,22 @@ export default function MatchPage() {
   };
 
   const handleSingleMatch = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('请先登录');
+      return;
+    }
+    
     if (!inputTitle || !inputDesc) return;
     
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/match`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           title: inputTitle,
           description: inputDesc,
