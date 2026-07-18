@@ -75,7 +75,10 @@ export default function MatchPage() {
           
           const matchResponse = await fetch(`${API_BASE_URL}/api/match`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
             body: JSON.stringify({
               title: item.title,
               description: item.description,
