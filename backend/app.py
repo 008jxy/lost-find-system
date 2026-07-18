@@ -1047,6 +1047,14 @@ def calculate_similarity(text1, text2):
             count2 = words2.count(word)
             jaccard += min(count1, count2) * 0.1
     
+    char_set1 = set(text1)
+    char_set2 = set(text2)
+    char_intersection = char_set1 & char_set2
+    char_union = char_set1 | char_set2
+    if char_union:
+        char_jaccard = len(char_intersection) / len(char_union)
+        jaccard = (jaccard + char_jaccard) / 2
+    
     return min(jaccard, 1.0)
 
 if __name__ == "__main__":
