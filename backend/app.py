@@ -193,7 +193,7 @@ def get_user():
             "username": user.username,
             "email": user.email,
             "avatar": user.avatar if user.avatar else '/avatar-male.jpg',
-            "created_at": user.created_at.isoformat() + "+00:00"
+            "created_at": user.created_at.replace(tzinfo=timezone.utc).isoformat()
         }
     })
 
@@ -283,7 +283,7 @@ def get_user_posts():
         "campus": item.campus,
         "image": item.image,
         "status": item.status,
-        "created_at": item.created_at.isoformat() + "+00:00"
+        "created_at": item.created_at.replace(tzinfo=timezone.utc).isoformat()
     } for item in items]
     
     return jsonify({"code": 200, "data": result})
@@ -374,7 +374,7 @@ def get_items():
             "campus": item.campus,
             "image": item.image,
             "status": item.status,
-            "created_at": item.created_at.isoformat() + "+00:00",
+            "created_at": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -452,7 +452,7 @@ def create_item():
             "found_location": new_item.found_location,
             "image": new_item.image,
             "status": new_item.status,
-            "created_at": new_item.created_at.isoformat() + "+00:00"
+            "created_at": new_item.created_at.replace(tzinfo=timezone.utc).isoformat()
         }
     }), 201
 
@@ -483,7 +483,7 @@ def get_item(item_id):
             "campus": item.campus,
             "image": item.image,
             "status": item.status,
-            "created_at": item.created_at.isoformat() + "+00:00",
+            "created_at": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -546,7 +546,7 @@ def update_item(item_id):
             "found_location": item.found_location,
             "campus": item.campus,
             "status": item.status,
-            "created_at": item.created_at.isoformat() + "+00:00"
+            "created_at": item.created_at.replace(tzinfo=timezone.utc).isoformat()
         }
     })
 
@@ -614,7 +614,7 @@ def search_items():
             "campus": item.campus,
             "image": item.image,
             "status": item.status,
-            "created_at": item.created_at.isoformat() + "+00:00",
+            "created_at": item.created_at.replace(tzinfo=timezone.utc).isoformat(),
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -639,7 +639,7 @@ def get_notifications():
         "content": n.content,
         "related_item_id": n.related_item_id,
         "read": n.read,
-        "created_at": n.created_at.isoformat() + "+00:00"
+        "created_at": n.created_at.replace(tzinfo=timezone.utc).isoformat()
     } for n in notifications]
     
     unread_count = Notification.query.filter_by(user_id=user_id_int, read=False).count()
@@ -705,7 +705,7 @@ def get_messages(item_id):
             "image": msg.image,
             "read": msg.read,
             "recalled": msg.recalled,
-            "created_at": msg.created_at.isoformat() + "+00:00",
+            "created_at": msg.created_at.replace(tzinfo=timezone.utc).isoformat(),
             "sender": {
                 "id": sender.id,
                 "username": sender.username,
@@ -782,7 +782,7 @@ def send_message(item_id):
             "receiver_id": message.receiver_id,
             "content": message.content,
             "image": message.image,
-            "created_at": message.created_at.isoformat() + "+00:00",
+            "created_at": message.created_at.replace(tzinfo=timezone.utc).isoformat(),
             "sender": {
                 "id": sender.id,
                 "username": sender.username,
@@ -831,7 +831,7 @@ def get_conversations():
                 "avatar": other_user.avatar
             } if other_user else None,
             "last_message": msg.content,
-            "last_time": msg.created_at.isoformat() + "+00:00",
+            "last_time": msg.created_at.replace(tzinfo=timezone.utc).isoformat(),
             "unread_count": unread_count
         })
     
