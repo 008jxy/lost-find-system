@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-from datetime import datetime
+from datetime import datetime, timezone
 import bcrypt
 import os
 import uuid
@@ -50,7 +50,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     avatar = db.Column(db.String(255), default='/avatar-male.jpg')
     gender = db.Column(db.String(10), default='male')
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -80,7 +80,7 @@ class Item(db.Model):
     campus = db.Column(db.String(20), default='kangmei')
     image = db.Column(db.String(255), default='')
     status = db.Column(db.String(20), default='pending')
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -89,7 +89,7 @@ class Notification(db.Model):
     content = db.Column(db.Text, nullable=False)
     related_item_id = db.Column(db.Integer)
     read = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -100,7 +100,7 @@ class Message(db.Model):
     image = db.Column(db.String(255), default='')
     read = db.Column(db.Boolean, default=False)
     recalled = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 # 创建数据库表
 with app.app_context():
@@ -881,7 +881,7 @@ def recall_message(msg_id):
     if message.recalled:
         return jsonify({"code": 400, "msg": "消息已被撤回"}), 400
     
-    time_diff = (datetime.now() - message.created_at).total_seconds()
+    time_diff = (datetime.now(timezone.utc) - message.created_at).total_seconds()
     if time_diff > 60:
         return jsonify({"code": 400, "msg": "只能在消息发出后1分钟内撤回"}), 400
     
