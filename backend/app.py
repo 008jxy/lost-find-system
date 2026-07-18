@@ -562,6 +562,8 @@ def delete_item(item_id):
     if item.user_id != int(user_id_str):
         return jsonify({"code": 403, "msg": "无权限删除此物品"}), 403
     
+    Message.query.filter_by(item_id=item_id).delete()
+    Notification.query.filter_by(related_item_id=item_id).delete()
     db.session.delete(item)
     db.session.commit()
     

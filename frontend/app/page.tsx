@@ -108,6 +108,10 @@ export default function Home() {
                           (statusFilter === 'pending' && item.status === 'pending') ||
                           (statusFilter === 'completed' && item.status !== 'pending');
         return categoryMatch && statusMatch;
+      }).sort((a, b) => {
+        if (a.status === 'pending' && b.status !== 'pending') return -1;
+        if (a.status !== 'pending' && b.status === 'pending') return 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
 
   const lostCount = items.filter(i => i.category === 'lost').length;
@@ -296,7 +300,6 @@ export default function Home() {
                     </span>
                     <span className={`text-sm px-2 py-1 rounded ${
                       item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      item.status === 'claimed' ? 'bg-orange-100 text-orange-700' :
                       'bg-gray-100 text-gray-500'
                     }`}>
                       {item.status === 'pending' ? '待认领' :

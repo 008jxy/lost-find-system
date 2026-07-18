@@ -259,7 +259,7 @@ export default function PostPage() {
 
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-medium mb-2">
-              拾得时间
+              {category === 'lost' ? '丢失时间' : '拾得时间'}
             </label>
             <input
               type="datetime-local"
@@ -267,21 +267,21 @@ export default function PostPage() {
               onChange={(e) => setFoundTime(e.target.value)}
               max={nowISO}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors min-w-full"
-              placeholder="请选择拾得时间"
+              placeholder={category === 'lost' ? '请选择丢失时间' : '请选择拾得时间'}
               style={{ width: '100%', minWidth: '100%' }}
             />
           </div>
 
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-medium mb-2">
-              拾得地点
+              {category === 'lost' ? '丢失地点' : '拾得地点'}
             </label>
             <input
               type="text"
               value={foundLocation}
               onChange={(e) => setFoundLocation(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-              placeholder="请输入拾得地点"
+              placeholder={category === 'lost' ? '请输入丢失地点' : '请输入拾得地点'}
             />
           </div>
 
