@@ -41,10 +41,10 @@ export default function MatchPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const isValid = await validateToken();
-      setIsLoggedIn(isValid);
+      const { valid } = await validateToken();
+      setIsLoggedIn(valid);
       setIsValidated(true);
-      if (isValid) {
+      if (valid) {
         fetchMyMatches();
       }
     };

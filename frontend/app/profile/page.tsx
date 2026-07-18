@@ -45,8 +45,8 @@ export default function Profile() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const isValid = await validateToken();
-      if (!isValid) {
+      const { valid } = await validateToken();
+      if (!valid) {
         clearAuthStorage();
         setUsername('');
         setAvatar('');

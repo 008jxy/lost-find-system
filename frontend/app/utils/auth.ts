@@ -7,10 +7,10 @@ export const clearAuthStorage = () => {
   localStorage.removeItem('avatar');
 };
 
-export const validateToken = async (): Promise<boolean> => {
+export const validateToken = async (): Promise<{ valid: boolean; userId?: number }> => {
   const token = localStorage.getItem('token');
   if (!token) {
-    return false;
+    return { valid: false };
   }
 
   try {
@@ -19,12 +19,12 @@ export const validateToken = async (): Promise<boolean> => {
     });
     const data = await response.json();
     if (data.code === 200) {
-      return true;
+      return { valid: true, userId: data.data?.id };
     } else {
       clearAuthStorage();
-      return false;
+      return { valid: false };
     }
   } catch {
-    return false;
+    return { valid: false };
   }
 };

@@ -52,14 +52,19 @@ export default function MessagesPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const isValid = await validateToken();
-      if (!isValid) {
+      const { valid, userId } = await validateToken();
+      if (!valid) {
         clearAuthStorage();
         router.push('/login');
       } else {
         setIsLoggedIn(true);
-        const userId = localStorage.getItem('user_id');
-        if (userId) setCurrentUserId(parseInt(userId));
+        if (userId) {
+          setCurrentUserId(userId);
+          localStorage.setItem('user_id', userId.toString());
+        } else {
+          const storedUserId = localStorage.getItem('user_id');
+          if (storedUserId) setCurrentUserId(parseInt(storedUserId));
+        }
         fetchConversations();
       }
       setIsValidated(true);
