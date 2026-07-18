@@ -128,6 +128,11 @@ def register():
         logger.warning(f"注册失败: 参数缺失")
         return jsonify({"code": 400, "msg": "用户名、邮箱、密码不能为空"}), 400
 
+    password = data.get('password')
+    if len(password) < 6:
+        logger.warning(f"注册失败: 密码长度不足")
+        return jsonify({"code": 400, "msg": "密码长度不能少于6位"}), 400
+
     if User.query.filter_by(username=username).first():
         logger.warning(f"注册失败: 用户名已存在 - {username}")
         return jsonify({"code": 400, "msg": "用户名已存在"}), 400

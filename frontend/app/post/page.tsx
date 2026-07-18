@@ -24,7 +24,9 @@ export default function PostPage() {
   const router = useRouter();
 
   const now = new Date();
-  const nowISO = now.toISOString().slice(0, 16);
+  const offset = now.getTimezoneOffset();
+  const localNow = new Date(now.getTime() - offset * 60 * 1000);
+  const nowISO = localNow.toISOString().slice(0, 16);
 
   useEffect(() => {
     const checkAuth = async () => {

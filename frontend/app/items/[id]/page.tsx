@@ -341,7 +341,10 @@ export default function ItemDetail() {
   }
 
   const isOwner = currentUserId === item.user_id;
-  const now = new Date().toISOString().slice(0, 16);
+  const nowDate = new Date();
+  const offset = nowDate.getTimezoneOffset();
+  const localNow = new Date(nowDate.getTime() - offset * 60 * 1000);
+  const now = localNow.toISOString().slice(0, 16);
 
   return (
     <div className="max-w-4xl mx-auto lg:max-w-5xl">
